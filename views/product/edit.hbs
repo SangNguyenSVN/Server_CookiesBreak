@@ -1,0 +1,144 @@
+<header class="navbar navbar-dark sticky-top flex-md-nowrap p-0 shadow top-header">
+    <button class="navbar-toggler position-absolute d-md-none hamburger ms-2" type="button" data-bs-toggle="collapse"
+        data-bs-target="#sidebarMenu" aria-controls="navbarSupportedContent" aria-expanded="false"
+        aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <a class="navbar-brand col-md-3 col-lg-2 mr-0 px-3" href="list.hbs">Tech Blog Admin</a>
+
+    <div class="dropdown ms-3 me-3 right-dropdown-div">
+
+        <button class="btn" id="bd-versions" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+            data-bs-display="static">
+            <span data-feather="settings">
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end right-dropdown" aria-labelledby="bd-versions">
+            <li>
+                <h6 class="dropdown-header">Super Admin</h6>
+            </li>
+            <hr class="dropdown-divider" />
+            <li>
+                <a class="dropdown-item current" href="#" aria-current="true"><span data-feather="tool"></span>
+                    Settings</a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="#" aria-current="false"><span data-feather="mail"></span> Messages</a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="login.hbs" aria-current="false"><span data-feather="log-out"></span>
+                    Sign Out</a>
+            </li>
+        </ul>
+    </div>
+</header>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <span data-feather="home"></span>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <span data-feather="file"></span>
+                            Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <span data-feather="shopping-cart"></span>
+                            Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="users.html">
+                            <span data-feather="users"></span>
+                            Users
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <nav aria-label="breadcrumb" class="pt-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+                    <li class="breadcrumb-item"><a href="users.html">Users</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add User</li>
+                </ol>
+            </nav>
+
+            <div
+                class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-2 mb-4 border-bottom">
+                <h2> New User</h2>
+            </div>
+
+            <form method="post" action="/cpanel/product/{{product.id}}/edit" class="row g-3 col-lg-8">
+                <div class="col-md-6">
+                    <label class="form-label" for="first_name">Name</label>
+                    <input value="{{product.name}}" name="name" type="text" class="form-control" id="first_name"
+                        placeholder="Enter name">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Price</label>
+                    <input value="{{product.price}}" name="price" type="price" class="form-control"
+                        placeholder="Enter price">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Quantity</label>
+                    <input value="{{producy.quantity}}" name="quantity" type="tel" class="form-control"
+                        placeholder="Enter quantity">
+                </div>
+
+                <div>
+                    <div>
+                        <input onchange="displayImg(this)" name="image" type="file">
+                        <label> choosefile</label>
+                        <img id="img" src="{{product.image}}" width="200" height="150" alt="">
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option selected></option>
+                        {{#each categories}}
+                        {{#if this.selected}}
+                        <option selected value="'{{this._id}}'">{{this.name}}</option>
+                        {{else}}
+                        <option value="'{{this._id}}'">{{this.name}}</option>
+                        {{/if}}
+                        {{/each}}
+                    </select>
+                </div>
+
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-left mb-3">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="button" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </main>
+    </div>
+</div>
+<script>
+ const displayImg = (input) =>{
+    if(input.files && input.files[0]){
+        var reader = new FileReader();
+        reader.onload = function(e){
+            $('#img').attr('src',e.target.result);
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+ }
+
+</script>

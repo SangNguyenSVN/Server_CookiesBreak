@@ -1,0 +1,19 @@
+.btn-edit{
+    color: black;
+    font-size: 16px;
+    padding: 6px 16px;
+    border-radius: 12px;
+    background-color: green;
+    transition-duration: 0.5s;
+    border: 2px solid black;
+}
+.btn-del{
+    color: white;
+    font-size: 16px;
+    padding: 6px 16px;
+    border-radius: 12px;
+    background-color: red;
+    transition-duration: 0.5s;
+    border: 2px solid black;
+}
+
