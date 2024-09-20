@@ -1,12 +1,57 @@
+<!-- views/index.hbs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{title}}</title>
+  <style>
+    /* Thêm CSS cho giao diện ở đây */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .navbar {
+      background-color: #333;
+      color: #fff;
+      padding: 10px;
+    }
+    .navbar a {
+      color: #fff;
+      text-decoration: none;
+      padding: 10px;
+    }
+    .container {
+      padding: 20px;
+    }
+    .sidebar {
+      width: 200px;
+      float: left;
+      background-color: #f4f4f4;
+      padding: 20px;
+      height: 100vh;
+    }
+    .content {
+      margin-left: 220px;
+      padding: 20px;
+    }
+  </style>
 </head>
 <body>
-  <h1>{{message}}</h1>
-  <p>This is the dashboard homepage.</p>
+  <div class="container">
+    <div class="sidebar">
+      <h2>Dashboard</h2>
+      <ul>
+        <li><a href="/doctors">Manage Doctors</a></li>
+        <li><a href="/hospitals">Manage Hospitals</a></li>
+        <li><a href="/reports">View Reports</a></li>
+        <li><a href="/users">Manage Users</a></li>
+      </ul>
+    </div>
+    <div class="content">
+      {{{body}}}
+    </div>
+  </div>
 </body>
 </html>
