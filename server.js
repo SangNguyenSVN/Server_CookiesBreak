@@ -1,46 +1,28 @@
-require('dotenv').config(); // Load environment variables
-
 const express = require('express');
-const path = require('path'); // Import path module
-const hbs = require('hbs'); // Import Handlebars
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const dotenv = require('dotenv');
+const authRoutes = require('./routes/auth');
+
+dotenv.config(); // Tải các biến môi trường từ file .env
 const app = express();
 
-const mongoose = require('mongoose');
-require('./models/hospital');
-// MongoDB connection string
-const mongoURI = process.env.MONGO_URI ;
+// Kết nối MongoDB
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('MongoDB Connected : http://localhost:3000'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
-// MongoDB connection
-mongoose
-  .connect(mongoURI,{})
-  .then(() => console.log('MongoDB connected successfully: http://localhost:3000' ))
-  .catch((err) => console.error('MongoDB connection error:', err));
+// Middleware
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// Set up Handlebars as view engine
-app.set('view engine', 'hbs');
-app.set('views', path.join(__dirname, 'views'));
+// Sử dụng routes
+app.use('/auth', authRoutes);
 
-// Middleware to parse JSON bodies
-app.use(express.json());
-
-// Import routes
-const indexRouter = require('./routes/index');
-
-// Import API
-const hospitalAPIRoute = require('./routes/apis/hospitalAPI');
-
-// Use routes
-app.use('/', indexRouter);
-
-// User APIs
-app.use('/hospital-api', hospitalAPIRoute);
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something went wrong!');
+// Trang chủ
+app.get('/', (req, res) => {
+    res.send('Welcome to the Admin Panel!');
 });
 
-
-
+// Xuất ứng dụng
 module.exports = app;
