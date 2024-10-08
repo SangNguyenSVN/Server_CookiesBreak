@@ -3,6 +3,10 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/auth');
+const cors = require('cors');
+
+
+
 
 dotenv.config(); // Tải các biến môi trường từ file .env
 const app = express();
@@ -12,6 +16,9 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
     .then(() => console.log('MongoDB Connected : http://localhost:3000'))
     .catch(err => console.error('MongoDB connection error:', err));
 
+
+// Sử dụng CORS
+app.use(cors());
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
