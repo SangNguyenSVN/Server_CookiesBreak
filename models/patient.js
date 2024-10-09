@@ -2,14 +2,14 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
-const { Schema } = mongoose; // Thêm dòng này
+const { Schema } = mongoose;
 
 const patientSchema = new mongoose.Schema({
     username: { 
         type: String, 
         required: true, 
         unique: true,
-        index: true // Thêm index để truy vấn nhanh hơn
+        index: true
     },
     password: { 
         type: String, 
@@ -17,7 +17,7 @@ const patientSchema = new mongoose.Schema({
     },
     phoneNumber: {
         type: String,
-        required: true, // Bắt buộc
+        required: true,
         unique: true,
         validate: {
             validator: function(v) {
@@ -26,34 +26,37 @@ const patientSchema = new mongoose.Schema({
             message: props => `${props.value} is not a valid phone number!`
         }
     },
-    role: { // Thêm trường role
+    role: { 
         type: Schema.Types.ObjectId,
-        ref: 'Role', // Liên kết tới Role
-        required: true // Bắt buộc
+        ref: 'Role',
+        required: true
     },
-    // Các trường khác không bắt buộc
     email: {
         type: String,
-        required: false, // Không bắt buộc
+        required: false,
         unique: true,
-        sparse: true // Thêm sparse để trường email có thể null mà không gây ra lỗi
+        sparse: true
     },
     gender: { 
         type: String, 
         enum: ['Male', 'Female', 'Other'], 
-        required: false, // Không bắt buộc
+        required: false,
         default: 'Other' 
     },
     dateOfBirth: { 
         type: Date, 
-        required: false // Không bắt buộc
+        required: false 
+    },
+    fullname: {  // Thêm trường fullname
+        type: String,
+        required: false, // Không bắt buộc
     },
 }, { timestamps: true });
 
 // Pre-save hook to hash the password before saving
 patientSchema.pre('save', async function(next) {
     if (this.isModified('password')) {
-        this.password = await bcrypt.hash(this.password, 10); // Hash mật khẩu với salt là 10
+        this.password = await bcrypt.hash(this.password, 10);
     }
     next();
 });

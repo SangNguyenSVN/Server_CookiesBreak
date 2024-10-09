@@ -2,7 +2,7 @@
 const Patient = require('../models/patient');
 const Doctor = require('../models/doctor');
 const Role = require('../models/role');
-
+require('dotenv').config();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -129,49 +129,64 @@ exports.login = async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        // Kiểm tra xem người dùng là bệnh nhân hay bác sĩ
-        const user = await Patient.findOne({ username }) || await Doctor.findOne({ username });
+        const user = await Patient.findOne({ username }).populate('role');
 
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(401).json({
+                message: 'Login successful, but no user found.',
+                token: null,
+                user: {
+                    user: null,
+                    role: null,
+                }
+            });
         }
 
-        // So sánh mật khẩu
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await user.comparePassword(password);
         if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid password' });
+            return res.status(401).json({
+                message: 'Login successful, but password is incorrect.',
+                token: null,
+                user: {
+                    user: null,
+                    role: null,
+                }
+            });
         }
 
-        // Lấy thông tin chi tiết của role
-        const role = await Role.findById(user.role); // Truy vấn thông tin vai trò
-
-        // Kiểm tra xem role có tồn tại không
-        if (!role) {
-            return res.status(404).json({ message: 'Role not found' });
-        }
-
-        // Tạo JWT
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-        // Hiển thị thông tin người dùng khi đăng nhập thành công
+        // Tạo token
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        console.log(process.env.JWT_SECRET)
+        // Trả về dữ liệu người dùng và role
         res.status(200).json({
             message: 'Login successful',
             token,
             user: {
-                id: user._id,
-                username: user.username,
-                phoneNumber: user.phoneNumber,
-                role: {
-                    id: role._id, // ID của role
-                    name: role.name, // Tên của role
-                    permissions: role.permissions // Quyền hạn của role
+                user: {
+                    id: user._id || "",
+                    username: user.username || "",
+                    phoneNumber: user.phoneNumber || "",
+                    email: user.email || "",
+                    gender: user.gender || "",
+                    dateOfBirth: user.dateOfBirth ? user.dateOfBirth : null,
+                    fullname: user.fullname || "",
+                },
+                role: user.role ? {
+                    id: user.role._id || "",
+                    name: user.role.name || "",
+                    permissions: user.role.permissions || []
+                } : {
+                    id: "", 
+                    name: "",
+                    permissions: []
                 }
             }
         });
     } catch (error) {
-        console.error('Error logging in:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        console.error("Login error:", error);
+        res.status(500).json({ message: 'Internal server error', error });
     }
 };
+
 
 

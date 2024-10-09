@@ -7,6 +7,7 @@ const cors = require('cors');
 // call routes
 const roleRoutes = require('./routes/role');
 const authRoutes = require('./routes/auth');
+const patientRoutes = require('./routes/users/patient'); // Import patientRoutes
 
 
 dotenv.config(); // Tải các biến môi trường từ file .env
@@ -27,6 +28,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Sử dụng routes
 app.use('/auth', authRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api', patientRoutes)
 
 // Trang chủ
 app.get('/', (req, res) => {
