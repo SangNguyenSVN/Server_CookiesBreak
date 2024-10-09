@@ -2,35 +2,23 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
+const { Schema } = mongoose;
+
 const doctorSchema = new mongoose.Schema({
     username: { 
         type: String, 
         required: true, 
         unique: true,
-        index: true
+        index: true // Thêm index để truy vấn nhanh hơn
     },
     password: { 
         type: String, 
         required: true 
     },
-    fullname: { 
-        type: String, 
-        required: false 
-    },
-    email: { 
-        type: String, 
-        required: false,
-        unique: true,
-        validate: {
-            validator: function(v) {
-                return /^\S+@\S+\.\S+$/.test(v);
-            },
-            message: props => `${props.value} is not a valid email address!`
-        }
-    },
     phoneNumber: {
         type: String,
         required: true, // Bắt buộc
+        unique: true,
         validate: {
             validator: function(v) {
                 return /\d{10}/.test(v);  // Đảm bảo có 10 số (tuỳ thuộc vào định dạng của bạn)
@@ -39,16 +27,36 @@ const doctorSchema = new mongoose.Schema({
         }
     },
     role: { // Thêm trường role
-        type: String,
-        enum: ['patient', 'doctor'], // Chỉ cho phép các giá trị này
-        default: 'doctor' // Mặc định là 'doctor'
+        type: Schema.Types.ObjectId,
+        ref: 'Role', // Liên kết tới Role
+        required: true // Bắt buộc
     },
+    department: { // Liên kết tới Department
+        type: Schema.Types.ObjectId,
+        ref: 'Department',
+        required: false // Không bắt buộc
+    },
+    // Các trường khác không bắt buộc
+    email: {
+        type: String,
+        required: false, // Không bắt buộc
+        unique: true,
+        sparse: true // Thêm sparse để trường email có thể null mà không gây ra lỗi
+    },
+    specialty: { // Chuyên ngành bác sĩ
+        type: String,
+        required: false // Không bắt buộc
+    },
+    experienceYears: { // Số năm kinh nghiệm
+        type: Number,
+        required: false // Không bắt buộc
+    }
 }, { timestamps: true });
 
 // Pre-save hook to hash the password before saving
 doctorSchema.pre('save', async function(next) {
     if (this.isModified('password')) {
-        this.password = await bcrypt.hash(this.password, 10); // Hash the password with a salt of 10
+        this.password = await bcrypt.hash(this.password, 10); // Hash mật khẩu với salt là 10
     }
     next();
 });

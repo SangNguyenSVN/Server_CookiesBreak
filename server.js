@@ -2,10 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
-const authRoutes = require('./routes/auth');
 const cors = require('cors');
 
-
+// call routes
+const roleRoutes = require('./routes/role');
+const authRoutes = require('./routes/auth');
 
 
 dotenv.config(); // Tải các biến môi trường từ file .env
@@ -25,6 +26,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Sử dụng routes
 app.use('/auth', authRoutes);
+app.use('/api/roles', roleRoutes);
 
 // Trang chủ
 app.get('/', (req, res) => {
