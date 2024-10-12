@@ -3,12 +3,15 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path');
 
-// call routes
+// Gọi routes
 const roleRoutes = require('./routes/role');
 const authRoutes = require('./routes/auth');
+const uploadRoutes = require('./routes/upload'); // Route upload
 const patientRoutes = require('./routes/users/patient'); // Import patientRoutes
-
+const packageRoutes = require('./routes/package');
+const departmentRoutes = require('./routes/department'); // Import routes
 
 dotenv.config(); // Tải các biến môi trường từ file .env
 const app = express();
@@ -18,7 +21,6 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
     .then(() => console.log('MongoDB Connected : http://localhost:3000'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-
 // Sử dụng CORS
 app.use(cors());
 // Middleware
@@ -26,14 +28,20 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Sử dụng routes
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/roles', roleRoutes);
-app.use('/api', patientRoutes)
+app.use('/api/upload', uploadRoutes);
+app.use('/api/packages', packageRoutes);
+app.use('/api/departments', departmentRoutes);
+app.use('/api', patientRoutes);
 
 // Trang chủ
 app.get('/', (req, res) => {
     res.send('Welcome to the Admin Panel!');
 });
+
+// Cung cấp static file cho hình ảnh
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 // Xuất ứng dụng
 module.exports = app;

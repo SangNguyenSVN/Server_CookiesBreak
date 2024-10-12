@@ -5,9 +5,6 @@ const secretKey = process.env.JWT_SECRET; // Sử dụng biến môi trường
 
 const authMiddleware = (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    console.log("Token:", token);
-    console.log("JWT_SECRET:", process.env.JWT_SECRET);
-
     if (!token) {
         return res.status(401).json({ message: 'Access denied. No token provided.' });
     }

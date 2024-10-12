@@ -7,13 +7,19 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 exports.logout = (req, res) => {
-    // Bạn có thể lưu token vào blacklist ở đây nếu có
-    const token = req.headers.authorization.split(' ')[1]; // Giả sử token được gửi qua header
-    // Thêm token vào blacklist hoặc thực hiện bất kỳ logic nào bạn muốn
-
-    // Gửi phản hồi thành công
-    res.status(200).json({ message: 'Đăng xuất thành công' });
+    try {
+        const token = req.headers.authorization.split(' ')[1];
+        console.log('Logout request received, token:', token);
+        
+        // Xử lý thêm token vào blacklist hoặc logic khác nếu cần
+        // Nếu không có lỗi, gửi phản hồi thành công
+        res.status(200).json({ message: 'Đăng xuất thành công' });
+    } catch (error) {
+        console.error('Error during logout:', error);
+        res.status(500).json({ message: 'Internal server error during logout' });
+    }
 };
+
 
 // Đăng ký bệnh nhân
 exports.registerPatient = async (req, res) => {
@@ -156,7 +162,6 @@ exports.login = async (req, res) => {
 
         // Tạo token
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        console.log(process.env.JWT_SECRET)
         // Trả về dữ liệu người dùng và role
         res.status(200).json({
             message: 'Login successful',
@@ -170,6 +175,7 @@ exports.login = async (req, res) => {
                     gender: user.gender || "",
                     dateOfBirth: user.dateOfBirth ? user.dateOfBirth : null,
                     fullname: user.fullname || "",
+                    address: user.address || "",
                 },
                 role: user.role ? {
                     id: user.role._id || "",

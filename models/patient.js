@@ -36,12 +36,12 @@ const patientSchema = new mongoose.Schema({
         required: false,
         unique: true,
         sparse: true
-    },
+    }, 
     gender: { 
         type: String, 
-        enum: ['Male', 'Female', 'Other'], 
+        enum: ['Nam', 'Nữ', 'Khác'], 
         required: false,
-        default: 'Other' 
+        default: null, 
     },
     dateOfBirth: { 
         type: Date, 
@@ -51,6 +51,10 @@ const patientSchema = new mongoose.Schema({
         type: String,
         required: false, // Không bắt buộc
     },
+    address:{
+        type: String,
+        required: false, // Không bắt buộc
+    }
 }, { timestamps: true });
 
 // Pre-save hook to hash the password before saving
