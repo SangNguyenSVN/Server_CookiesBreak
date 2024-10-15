@@ -7,7 +7,8 @@ const hospitalSchema = new mongoose.Schema({
     doctors: [
         {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Doctor'
+            ref: 'Doctor',
+            required: false
         }
     ],
     departments: [
@@ -16,8 +17,10 @@ const hospitalSchema = new mongoose.Schema({
             ref: 'Department'
         }
     ],
-    medicines: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Medicine' }], // Tham chiếu đến thuốc
-    packages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Package' }]  // Tham chiếu đến gói khám
+    medicines: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Medicine', required: false
+}], // Tham chiếu đến thuốc
+    packages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Package', required: false
+}]  // Tham chiếu đến gói khám
 }, { timestamps: true });
 
 const Hospital = mongoose.model('Hospital', hospitalSchema);

@@ -6,7 +6,7 @@ const appointmentSchema = new mongoose.Schema({
     status: { type: mongoose.Schema.Types.ObjectId, ref: 'Status', required: true },
     appointmentDate: { type: Date, required: true },
     notes: { type: String },
-    reason: { type: String, required: true }  // Thêm trường reason
+    reason: { type: String, required: true, default:'' }  // Thêm trường reason
 }, { timestamps: true });
 
 const Appointment = mongoose.model('Appointment', appointmentSchema);
