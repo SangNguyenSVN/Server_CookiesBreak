@@ -3,7 +3,6 @@ const Patient = require('../models/patient');
 const Doctor = require('../models/doctor');
 const Role = require('../models/role');
 require('dotenv').config();
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 exports.logout = (req, res) => {
@@ -132,11 +131,25 @@ exports.registerDoctor = async (req, res) => {
 // Đăng nhập
 // controllers/authController.js
 exports.login = async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, userType } = req.body; // Thêm userType để xác định loại người dùng
 
     try {
-        const user = await Patient.findOne({ username }).populate('role');
+        let user;
+        
+        // Tìm người dùng dựa trên userType
+        if (userType === 'doctor') {
+            user = await Doctor.findOne({ username }).populate('role');
+        } else if (userType === 'patient') {
+            user = await Patient.findOne({ username }).populate('role');
+        } else {
+            return res.status(400).json({
+                message: 'Invalid user type. Please specify "doctor" or "patient".',
+                token: null,
+                user: null,
+            });
+        }
 
+        // Kiểm tra xem người dùng có tồn tại không
         if (!user) {
             return res.status(401).json({
                 message: 'Login successful, but no user found.',
@@ -148,6 +161,7 @@ exports.login = async (req, res) => {
             });
         }
 
+        // Kiểm tra mật khẩu
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             return res.status(401).json({
@@ -162,6 +176,7 @@ exports.login = async (req, res) => {
 
         // Tạo token
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
         // Trả về dữ liệu người dùng và role
         res.status(200).json({
             message: 'Login successful',

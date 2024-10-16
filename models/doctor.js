@@ -31,11 +31,6 @@ const doctorSchema = new mongoose.Schema({
         ref: 'Role', // Liên kết tới Role
         required: true // Bắt buộc
     },
-    department: { // Liên kết tới Department
-        type: Schema.Types.ObjectId,
-        ref: 'Department',
-        required: false // Không bắt buộc
-    },
     // Các trường khác không bắt buộc
     email: {
         type: String,
@@ -47,10 +42,6 @@ const doctorSchema = new mongoose.Schema({
         type: String,
         required: false // Không bắt buộc
     },
-    experienceYears: { // Số năm kinh nghiệm
-        type: Number,
-        required: false // Không bắt buộc
-    }
 }, { timestamps: true });
 
 // Pre-save hook to hash the password before saving
