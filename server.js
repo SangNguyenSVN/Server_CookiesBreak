@@ -10,8 +10,7 @@ const roleRoutes = require('./routes/role');
 const authRoutes = require('./routes/auth');
 const uploadRoutes = require('./routes/upload'); // Route upload
 const patientRoutes = require('./routes/users/patient'); // Import patientRoutes
-const packageRoutes = require('./routes/package');
-const departmentRoutes = require('./routes/department'); // Import routes
+const apisRoutes = require('./routes/apis'); // Import routes
 
 dotenv.config(); // Tải các biến môi trường từ file .env
 const app = express();
@@ -31,8 +30,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/api/packages', packageRoutes);
-app.use('/api/departments', departmentRoutes);
+app.use('/apis', apisRoutes);
 app.use('/api', patientRoutes);
 
 // Trang chủ
