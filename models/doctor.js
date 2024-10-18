@@ -5,6 +5,10 @@ const bcrypt = require('bcrypt');
 const { Schema } = mongoose;
 
 const doctorSchema = new mongoose.Schema({
+    fullname:{
+        type:String,
+        required: true, 
+    },
     username: { 
         type: String, 
         required: true, 
@@ -31,7 +35,6 @@ const doctorSchema = new mongoose.Schema({
         ref: 'Role', // Liên kết tới Role
         required: true // Bắt buộc
     },
-    // Các trường khác không bắt buộc
     email: {
         type: String,
         required: false, // Không bắt buộc
@@ -41,6 +44,15 @@ const doctorSchema = new mongoose.Schema({
     specialty: { // Chuyên ngành bác sĩ
         type: String,
         required: false // Không bắt buộc
+    },
+    hospital: { // Thêm trường hospital để liên kết với mô hình Hospital
+        type: Schema.Types.ObjectId,
+        ref: 'Hospital', // Liên kết tới Hospital
+        required: true // Bắt buộc
+    },
+    imageUrl: { // Thêm trường để lưu URL hình ảnh
+        type: String,
+        required: false
     },
 }, { timestamps: true });
 

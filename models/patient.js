@@ -54,6 +54,10 @@ const patientSchema = new mongoose.Schema({
     address:{
         type: String,
         required: false, // Không bắt buộc
+    },
+    imageUrl: { // Thêm trường để lưu URL hình ảnh
+        type: String,
+        required: false
     }
 }, { timestamps: true });
 

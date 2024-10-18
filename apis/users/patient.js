@@ -3,19 +3,36 @@ const router = express.Router();
 const Patient = require('../../models/patient'); // Import model
 const authMiddleware = require('../../middleware/auth'); // Import middleware
 const bcrypt = require('bcrypt'); // Thư viện bcrypt để mã hóa mật khẩu
+const upload = require('../../config/multer'); // Import multer middleware
+const cloudinary = require('../../config/cloudinary'); // Nhập Cloudinary
 
 // Cập nhật thông tin người dùng
-router.put('/update', authMiddleware, async (req, res) => {
+router.put('/update', authMiddleware, upload.single('image'), async (req, res) => {
     const userId = req.user.id; // Lấy id người dùng từ token
 
     // Dữ liệu cần cập nhật
     const { phoneNumber, email, gender, dateOfBirth, fullname, address } = req.body;
+    let imageUrl;
 
     try {
+        // Nếu có tệp hình ảnh, tải lên Cloudinary
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            imageUrl = result.secure_url; // Lấy URL hình ảnh đã tải lên
+        }
+
         // Cập nhật thông tin người dùng
         const updatedPatient = await Patient.findByIdAndUpdate(
             userId,
-            { phoneNumber, email, gender, dateOfBirth, fullname, address },
+            { 
+                phoneNumber, 
+                email, 
+                gender, 
+                dateOfBirth, 
+                fullname, 
+                address, 
+                image: imageUrl // Cập nhật trường hình ảnh
+            },
             { new: true, runValidators: true } // Trả về bản ghi đã cập nhật và kiểm tra validation
         );
 

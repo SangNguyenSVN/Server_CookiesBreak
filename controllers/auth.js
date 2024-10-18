@@ -1,6 +1,7 @@
 // controllers/authController.js
 const Patient = require('../models/patient');
 const Doctor = require('../models/doctor');
+const Hospital= require('../models/hospital');
 const Role = require('../models/role');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
@@ -76,11 +77,11 @@ exports.registerPatient = async (req, res) => {
 
 // Đăng ký bác sĩ
 exports.registerDoctor = async (req, res) => {
-    const { username, password, phoneNumber, roleId } = req.body; // Nhận roleId từ body
+    const { fullname, username, password, phoneNumber, roleId, hospitalId } = req.body;
 
     // Kiểm tra các trường bắt buộc
-    if (!username || !password || !phoneNumber || !roleId) {
-        return res.status(400).json({ message: 'Missing required fields: username, password, phoneNumber, and roleId are required' });
+    if (!fullname || !username || !password || !phoneNumber || !roleId || !hospitalId) {
+        return res.status(400).json({ message: 'Missing required fields: fullname, username, password, phoneNumber, roleId, and hospitalId are required' });
     }
 
     try {
@@ -96,28 +97,43 @@ exports.registerDoctor = async (req, res) => {
             return res.status(400).json({ message: 'Invalid role ID' });
         }
 
+        // Kiểm tra xem bệnh viện có tồn tại không
+        const hospital = await Hospital.findById(hospitalId);
+        if (!hospital) {
+            return res.status(400).json({ message: 'Invalid hospital ID' });
+        }
+
         // Tạo mới bác sĩ
         const doctor = new Doctor({
+            fullname,
             username,
-            password, // Sử dụng mật khẩu không băm, vì đã băm trong model
+            password, // Mật khẩu sẽ được băm trong model
             phoneNumber,
-            role: roleId, // Gán roleId cho bác sĩ
+            role: roleId,
+            hospital: hospitalId
         });
 
         // Lưu bác sĩ vào cơ sở dữ liệu
         await doctor.save();
+        
+        await Hospital.findByIdAndUpdate(hospitalId, { $addToSet: { doctors: doctor._id } });
 
         // Trả về thông tin bác sĩ cùng với thông tin vai trò
         res.status(201).json({
             message: 'Doctor registered successfully',
             user: {
                 id: doctor._id,
+                fullname: doctor.fullname,
                 username: doctor.username,
                 phoneNumber: doctor.phoneNumber,
                 role: {
-                    id: role._id, // ID của role
-                    name: role.name, // Tên của role
-                    permissions: role.permissions // Quyền hạn của role
+                    id: role._id,
+                    name: role.name,
+                    permissions: role.permissions
+                },
+                hospital: {
+                    id: hospital._id,
+                    name: hospital.name
                 }
             }
         });
@@ -128,13 +144,14 @@ exports.registerDoctor = async (req, res) => {
 };
 
 
+
 // Đăng nhập
 // controllers/authController.js
 exports.login = async (req, res) => {
     const { username, password, userType } = req.body; // Thêm userType để xác định loại người dùng
 
     try {
-        let user;
+        var user;
         
         // Tìm người dùng dựa trên userType
         if (userType === 'doctor') {
