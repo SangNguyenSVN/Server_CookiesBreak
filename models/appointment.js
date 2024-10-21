@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const appointmentSchema = new mongoose.Schema({
-    patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
+    patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: false },
     doctor: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true },
     status: { type: mongoose.Schema.Types.ObjectId, ref: 'Status', required: true },
     package: { type: mongoose.Schema.Types.ObjectId, ref: 'Package' }, // Thêm trường package

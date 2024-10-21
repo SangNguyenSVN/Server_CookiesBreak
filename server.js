@@ -31,7 +31,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/apis', apisRoutes);
+app.use('/api', apisRoutes);
 app.use('/user', userRoutes);
 
 // Trang chủ

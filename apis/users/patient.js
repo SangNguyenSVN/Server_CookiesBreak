@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Patient = require('../../models/patient'); // Import model
 const authMiddleware = require('../../middleware/auth'); // Import middleware
-const bcrypt = require('bcrypt'); // Thư viện bcrypt để mã hóa mật khẩu
+const bcrypt = require('bcryptjs'); // Thư viện bcrypt để mã hóa mật khẩu
 const upload = require('../../config/multer'); // Import multer middleware
 const cloudinary = require('../../config/cloudinary'); // Nhập Cloudinary
 
@@ -82,3 +82,4 @@ router.put('/account/update', authMiddleware, async (req, res) => {
 });
 
 module.exports = router;
+      

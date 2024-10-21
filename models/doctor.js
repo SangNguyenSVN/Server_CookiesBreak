@@ -1,33 +1,32 @@
 // models/doctor.js
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs'); // Sử dụng bcryptjs
 
 const { Schema } = mongoose;
 
 const doctorSchema = new mongoose.Schema({
-    fullname:{
-        type:String,
-        required: true, 
+    fullname: {
+        type: String,
+        required: true,
     },
-    username: { 
-        type: String, 
-        required: true, 
+    username: {
+        type: String,
+        required: true,
         unique: true,
         index: true // Thêm index để truy vấn nhanh hơn
     },
-    password: { 
-        type: String, 
-        required: true 
+    password: {
+        type: String,
+        required: true
     },
     phoneNumber: {
         type: String,
         required: true, // Bắt buộc
         unique: true,
         validate: {
-            validator: function(v) {
+            validator: function (v) {
                 return /\d{10}/.test(v);  // Đảm bảo có 10 số (tuỳ thuộc vào định dạng của bạn)
-            },
-            message: props => `${props.value} is not a valid phone number!`
+            }
         }
     },
     role: { // Thêm trường role
@@ -45,10 +44,24 @@ const doctorSchema = new mongoose.Schema({
         type: String,
         required: false // Không bắt buộc
     },
+    gender: {
+        type: String,
+        enum: ['Nam', 'Nữ', 'Khác'],
+        required: false,
+        default: null,
+    },
+    dateOfBirth: {
+        type: Date,
+        required: false
+    },
     hospital: { // Thêm trường hospital để liên kết với mô hình Hospital
         type: Schema.Types.ObjectId,
         ref: 'Hospital', // Liên kết tới Hospital
         required: true // Bắt buộc
+    },
+    address: {
+        type: String,
+        required: false, // Không bắt buộc
     },
     imageUrl: { // Thêm trường để lưu URL hình ảnh
         type: String,
@@ -57,16 +70,17 @@ const doctorSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Pre-save hook to hash the password before saving
-doctorSchema.pre('save', async function(next) {
+doctorSchema.pre('save', async function (next) {
     if (this.isModified('password')) {
-        this.password = await bcrypt.hash(this.password, 10); // Hash mật khẩu với salt là 10
+        const salt = await bcrypt.genSalt(10); // Tạo salt với số vòng 10
+        this.password = await bcrypt.hash(this.password, salt); // Hash mật khẩu
     }
     next();
 });
 
 // Method to compare provided password with stored password
-doctorSchema.methods.comparePassword = async function(password) {
-    return await bcrypt.compare(password, this.password);
+doctorSchema.methods.comparePassword = async function (password) {
+    return await bcrypt.compare(password, this.password); // So sánh mật khẩu
 };
 
 const Doctor = mongoose.model('Doctor', doctorSchema);

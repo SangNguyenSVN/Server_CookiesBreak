@@ -5,6 +5,6 @@ const categorySchema = new mongoose.Schema({
     description: { type: String },
     medicines: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Medicine' }], // Liên kết với Medicine
 }, { timestamps: true });
- 
+  
 const Category = mongoose.model('Category', categorySchema);
 module.exports = Category;

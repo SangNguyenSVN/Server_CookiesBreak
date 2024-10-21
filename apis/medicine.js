@@ -16,6 +16,8 @@ router.post('/', async (req, res) => {
             .populate('status'); // Cập nhật cho trường status
 
         res.status(201).json(populatedMedicine);
+        await Category.findByIdAndUpdate(medicine.category, { $addToSet: { medicines: medicine._id } });
+
     } catch (error) {
         res.status(400).json({ error: error.message });
     }

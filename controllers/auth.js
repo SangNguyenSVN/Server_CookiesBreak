@@ -151,7 +151,7 @@ exports.login = async (req, res) => {
     const { username, password, userType } = req.body; // Thêm userType để xác định loại người dùng
 
     try {
-        var user;
+        let user;
         
         // Tìm người dùng dựa trên userType
         if (userType === 'doctor') {

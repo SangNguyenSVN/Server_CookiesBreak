@@ -6,16 +6,18 @@ const medicineAPI = require('../apis/medicine')
 const categoryAPI = require('../apis/category')
 const detailAPI = require('../apis/details')
 const statusAPI = require('../apis/status')
+const apmAPI = require('../apis/appointment')
 const router = express.Router();
 
 // Sử dụng các route API
-router.use('/department', departmentAPI);
-router.use('/hospital', hospitalAPI);
-router.use('/package', packageAPI);
-router.use('/medicine', medicineAPI);
-router.use('/category', categoryAPI);
+router.use('/departments', departmentAPI);
+router.use('/hospitals', hospitalAPI);
+router.use('/packages', packageAPI);
+router.use('/medicines', medicineAPI);
+router.use('/categories', categoryAPI);
 router.use('/details', detailAPI);
 router.use('/status', statusAPI)
+router.use('/appoitments', apmAPI)
 
 
 module.exports = router;

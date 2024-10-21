@@ -1,6 +1,6 @@
 // models/patient.js
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const { Schema } = mongoose;
 
@@ -62,16 +62,18 @@ const patientSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Pre-save hook to hash the password before saving
-patientSchema.pre('save', async function(next) {
+patientSchema.pre('save', async function (next) {
     if (this.isModified('password')) {
-        this.password = await bcrypt.hash(this.password, 10);
+        const salt = await bcrypt.genSalt(10); // Tạo salt với số vòng 10
+        this.password = await bcrypt.hash(this.password, salt); // Hash mật khẩu
     }
     next();
 });
 
+
 // Method to compare provided password with stored password
-patientSchema.methods.comparePassword = async function(password) {
-    return await bcrypt.compare(password, this.password);
+patientSchema.methods.comparePassword = async function (password) {
+    return await bcrypt.compare(password, this.password); // So sánh mật khẩu
 };
 
 const Patient = mongoose.model('Patient', patientSchema);

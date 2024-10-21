@@ -6,13 +6,22 @@ const router = express.Router();
 // Tạo một loại thuốc mới
 router.post('/', async (req, res) => {
     try {
-        const medicine = new Medicine(req.body);
-        await medicine.save();
+        // Nếu có medicine trong request, xử lý thêm
+        if (req.body.medicine) {
+            const medicine = new Medicine(req.body.medicine);
+            await medicine.save();
 
-        // Cập nhật danh mục để thêm ID thuốc vào mảng medicines
-        await Category.findByIdAndUpdate(medicine.category, { $addToSet: { medicines: medicine._id } });
+            // Cập nhật danh mục nếu truyền vào
+            await Category.findByIdAndUpdate(medicine.category, { $addToSet: { medicines: medicine._id } });
 
-        res.status(201).json(medicine);
+            res.status(201).json({ category: null, medicine });
+        } else {
+            // Nếu không có medicine, chỉ tạo Category
+            const category = new Category(req.body);
+            await category.save();
+
+            res.status(201).json(category);
+        }
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -42,13 +51,19 @@ router.get('/:id', async (req, res) => {
 // Cập nhật một loại thuốc theo ID
 router.put('/:id', async (req, res) => {
     try {
-        const medicine = await Medicine.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        const medicine = await Medicine.findById(req.params.id);
         if (!medicine) return res.status(404).json({ error: 'Medicine not found' });
 
-        // Cập nhật danh mục để sửa ID thuốc trong mảng medicines
-        await Category.findByIdAndUpdate(medicine.category, { $addToSet: { medicines: medicine._id } });
+        // Nếu category đã thay đổi, xóa medicine khỏi danh mục cũ
+        if (req.body.category && req.body.category !== medicine.category.toString()) {
+            await Category.findByIdAndUpdate(medicine.category, { $pull: { medicines: medicine._id } });
+            await Category.findByIdAndUpdate(req.body.category, { $addToSet: { medicines: medicine._id } });
+        }
 
-        res.json(medicine);
+        // Cập nhật medicine với dữ liệu mới
+        const updatedMedicine = await Medicine.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+
+        res.json(updatedMedicine);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
