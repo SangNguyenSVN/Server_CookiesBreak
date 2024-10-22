@@ -1,5 +1,8 @@
 const express = require('express');
 const Hospital = require('../models/hospital');
+const Package = require('../models/package');
+const Medicine = require('../models/medicine');
+const Department = require('../models/department')
 const cloudinary = require('../config/cloudinary'); // Nhập Cloudinary
 const upload = require('../config/multer'); // Nhập multer middleware
 const router = express.Router();
@@ -40,10 +43,20 @@ router.post('/', upload.single('image'), async (req, res) => {
 // GET /hospitals - Lấy danh sách tất cả bệnh viện
 router.get('/', async (req, res) => {
     try {
-        const hospitals = await Hospital.find();
+        const hospitals = await Hospital.find()
+            .populate({
+                path: 'doctors',
+                select: 'image fullname specialty' // Chỉ lấy image, fullname, specialty của bác sĩ
+            })
+            .populate('departments') // Nếu bạn cũng muốn lấy thông tin phòng ban
+            .populate('medicines') // Nếu bạn cũng muốn lấy thông tin thuốc
+            .populate('packages') // Nếu bạn cũng muốn lấy thông tin gói
+            .exec();
+
         res.status(200).json(hospitals);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi khi lấy thông tin bệnh viện' });
     }
 });
 
@@ -64,24 +77,62 @@ router.get('/:id', async (req, res) => {
 // PUT /hospitals/:id - Cập nhật thông tin bệnh viện
 router.put('/:id', upload.single('image'), async (req, res) => {
     try {
-        const { file } = req;
+        const { file } = req; // Giả sử bạn gửi ID gói và thuốc qua req.body
         const updateData = { ...req.body };
 
+        // Nếu có file hình ảnh mới, upload lên Cloudinary
         if (file) {
-            // Nếu có file hình ảnh mới, upload lên Cloudinary
-            const result = await cloudinary.uploader.upload(file.path);
-            updateData.image = result.secure_url; // Cập nhật URL hình ảnh
+            try {
+                const result = await cloudinary.uploader.upload(file.path);
+                updateData.image = result.secure_url; // Cập nhật URL hình ảnh
+            } catch (uploadError) {
+                return res.status(400).json({ message: 'Image upload failed: ' + uploadError.message });
+            }
         }
 
         const hospital = await Hospital.findByIdAndUpdate(req.params.id, updateData, { new: true });
         if (!hospital) {
-            return res.status(404).json({ message: 'Hospital not found' });
+            return res.status(404).json({ message: 'Bệnh viện không tồn tại' });
         }
+
+        // Cập nhật liên kết cho các bác sĩ
+        if (req.body.doctors && Array.isArray(req.body.doctors)) {
+            await Doctor.updateMany(
+                { _id: { $in: req.body.doctors } },
+                { hospital: hospital._id } // Cập nhật liên kết với bệnh viện
+            );
+        }
+
+        // Cập nhật liên kết cho các phòng
+        if (req.body.departments && Array.isArray(req.body.departments)) {
+            await Department.updateMany(
+                { _id: { $in: req.body.departments } },
+                { hospital: hospital._id } // Cập nhật liên kết với bệnh viện
+            );
+        }
+
+        // Cập nhật liên kết cho thuốc
+        if (req.body.medicines && Array.isArray(req.body.medicines)) {
+            await Medicine.updateMany(
+                { _id: { $in: req.body.medicines } },
+                { hospital: hospital._id } // Cập nhật liên kết với bệnh viện
+            );
+        }
+
+        // Cập nhật liên kết cho gói khám
+        if (req.body.packages && Array.isArray(req.body.packages)) {
+            await Package.updateMany(
+                { _id: { $in: req.body.packages } },
+                { hospital: hospital._id } // Cập nhật liên kết với bệnh viện
+            );
+        }
+
         res.status(200).json(hospital);
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
 });
+
  
 // DELETE /hospitals/:id - Xóa một bệnh viện
 router.delete('/:id', async (req, res) => {

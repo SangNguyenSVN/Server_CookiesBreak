@@ -12,5 +12,6 @@ router.post('/login', authController.login);
 
 router.post('/logout', authMiddleware, authController.logout); // Route đăng xuất
 
+router.put('/change/password',authMiddleware, authController.updateUser);
 
 module.exports = router;

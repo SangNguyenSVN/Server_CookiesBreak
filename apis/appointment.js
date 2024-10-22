@@ -27,14 +27,15 @@ router.get('/:id', async (req, res) => {
 
 // Thêm một cuộc hẹn mới (POST /appointments)
 router.post('/', async (req, res) => {
-    const { patient, doctor, status, package, appointmentDate, notes, reason, fullname, email, phoneNumber } = req.body;
+    const { patient, doctor, status, package,time, date, notes, reason, fullname, email, phoneNumber } = req.body;
 
     const appointment = new Appointment({
         patient,
         doctor,
         status,
         package,
-        appointmentDate,
+        time,
+        date, 
         notes,
         reason,
         fullname,
@@ -52,12 +53,12 @@ router.post('/', async (req, res) => {
 
 // Sửa một cuộc hẹn (PUT /appointments/:id)
 router.put('/:id', async (req, res) => {
-    const { patient, doctor, status, package, appointmentDate, notes, reason, fullname, email, phoneNumber } = req.body;
+    const { patient, doctor, status, package, date, notes, reason, fullname, email, phoneNumber } = req.body;
 
     try {
         const updatedAppointment = await Appointment.findByIdAndUpdate(
             req.params.id,
-            { patient, doctor, status, package, appointmentDate, notes, reason, fullname, email, phoneNumber },
+            { patient, doctor, status, package, date, notes, reason, fullname, email, phoneNumber },
             { new: true, runValidators: true } // Trả về bản ghi đã cập nhật
         );
         if (!updatedAppointment) return res.status(404).json({ message: 'Appointment not found' });
@@ -102,12 +103,17 @@ router.get('/doctor/:doctorId', async (req, res) => {
     }
 });
 
-// Tìm kiếm cuộc hẹn theo email (GET /appointments/email/:email)
-router.get('/email/:email', async (req, res) => {
+// http://localhost:3001/api/appointments/reminders
+router.get('/reminders', async (req, res) => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1); 
+    const startOfDay = new Date(tomorrow.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(tomorrow.setHours(23, 59, 59, 999));
+
     try {
-        const appointments = await Appointment.find({ email: req.params.email })
-            .populate('patient doctor status package');
-        if (appointments.length === 0) return res.status(404).json({ message: 'No appointments found for this email' });
+        const appointments = await Appointment.find({
+            date: { $gte: startOfDay, $lte: endOfDay } // Thay đổi từ appointmentDate thành date
+        }).populate('patient doctor package status');
         res.json(appointments);
     } catch (err) {
         res.status(500).json({ message: err.message });

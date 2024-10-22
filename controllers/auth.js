@@ -22,6 +22,7 @@ exports.logout = (req, res) => {
 
 
 // Đăng ký bệnh nhân
+// http://locahot:3001/api/auth/register/patient
 exports.registerPatient = async (req, res) => {
     const { username, password, phoneNumber, roleId } = req.body;
 
@@ -208,6 +209,7 @@ exports.login = async (req, res) => {
                     dateOfBirth: user.dateOfBirth ? user.dateOfBirth : null,
                     fullname: user.fullname || "",
                     address: user.address || "",
+                    image: user.image || "", // Thêm trường URL ảnh
                 },
                 role: user.role ? {
                     id: user.role._id || "",
@@ -226,5 +228,33 @@ exports.login = async (req, res) => {
     }
 };
 
+exports.updateUser = async (req, res) => {
+    try {
+        const userId = req.user.id; // Lấy id người dùng từ token đã giải mã
+        const { password, userType } = req.body; // Lấy password và userType từ req.body
 
+        // Tạo đối tượng cập nhật
+        const updateData = {};
+
+        // Nếu có mật khẩu mới, thêm vào đối tượng cập nhật
+        if (password) {
+            updateData.password = password; // Thêm password vào updateData
+        }
+
+        // Xác định loại người dùng và cập nhật thông tin
+        if (userType === 'doctor') {
+            await Doctor.findByIdAndUpdate(userId, updateData, { new: true });
+        } else if (userType === 'patient') {
+            await Patient.findByIdAndUpdate(userId, updateData, { new: true });
+        } else {
+            return res.status(400).json({ message: 'Invalid user type' });
+        }
+
+        // Trả về phản hồi thành công
+        res.status(200).json({ message: 'Thông tin tài khoản đã được cập nhật thành công' });
+    } catch (error) {
+        console.error('Error updating account information:', error);
+        res.status(500).json({ message: 'Lỗi trong quá trình cập nhật tài khoản', error: error.message });
+    }
+};
 

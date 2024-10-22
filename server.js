@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
+const cron = require('node-cron');
+const sendReminder = require('./config/remider'); // Gọi reminder.js
 
 // Gọi routes
 const roleRoutes = require('./routes/role');
@@ -32,7 +34,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api', apisRoutes);
-app.use('/user', userRoutes);
+app.use('/api/user', userRoutes);
 
 // Trang chủ
 app.get('/', (req, res) => {
@@ -42,5 +44,15 @@ app.get('/', (req, res) => {
 // Cung cấp static file cho hình ảnh
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
+
+// Thiết lập cron job để gửi nhắc nhở mỗi ngày vào lúc 8 giờ sáng
+cron.schedule('0 8 * * *', async () => {
+    try {
+        await sendReminder();
+        console.log('Reminders sent successfully.');
+    } catch (error) {
+        console.error('Error sending reminders:', error);
+    }
+});
 // Xuất ứng dụng
 module.exports = app;

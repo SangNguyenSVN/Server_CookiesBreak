@@ -63,10 +63,8 @@ const doctorSchema = new mongoose.Schema({
         type: String,
         required: false, // Không bắt buộc
     },
-    imageUrl: { // Thêm trường để lưu URL hình ảnh
-        type: String,
-        required: false
-    },
+    image: { type: String },
+
 }, { timestamps: true });
 
 // Pre-save hook to hash the password before saving

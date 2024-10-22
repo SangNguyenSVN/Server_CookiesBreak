@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const hospitalSchema = new mongoose.Schema({
+const hospitalSchema = new mongoose.Schema({ 
     image: { type: String },
     name: { type: String, required: true, unique: true },
     location: { type: String },
