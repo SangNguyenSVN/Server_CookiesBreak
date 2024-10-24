@@ -7,20 +7,14 @@ const appointmentSchema = new mongoose.Schema({
     package: { type: mongoose.Schema.Types.ObjectId, ref: 'Package' },
     time: { type: String, require: true },
     date: { type: Date, required: true },
-    notes: { type: String, require: false },
-    reason: { type: String, required: true, default: '' }, // Thêm trường reason
+    notes: { type: String, require: false, default: '' },
+    reason: { type: String, required: false, default: '' }, // Thêm trường reason
     fullname: { type: String, required: true }, // Thêm trường fullname
     email: { type: String, required: true }, // Thêm trường email
     phoneNumber: {
         type: String,
         required: true,
-        validate: {
-            validator: function (v) {
-                return /\d{10}/.test(v);  // Đảm bảo có 10 số (tuỳ thuộc vào định dạng của bạn)
-            },
-            message: props => `${props.value} is not a valid phone number!`
-        }
-    } // Thêm trường phoneNumber với validation
+    } 
 }, { timestamps: true });
 
 const Appointment = mongoose.model('Appointment', appointmentSchema);

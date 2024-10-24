@@ -8,6 +8,9 @@ const detailAPI = require('../apis/details')
 const statusAPI = require('../apis/status')
 const newsAPI = require('../apis/news');
 const apmAPI = require('../apis/appointment')
+
+const remiderAPI = require('../controllers/reminder')
+
 const router = express.Router();
 
 // Sử dụng các route API
@@ -25,9 +28,10 @@ router.use('/details', detailAPI);
 
 router.use('/status', statusAPI);
 
-router.use('/appoitments', apmAPI);
+router.use('/appointments', apmAPI);
 
 router.use('/news', newsAPI);
 
+router.use('/reminder', remiderAPI);
 
 module.exports = router;

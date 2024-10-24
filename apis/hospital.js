@@ -133,7 +133,32 @@ router.put('/:id', upload.single('image'), async (req, res) => {
     }
 });
 
- 
+//Get   api/getbyderpartmene
+router.get('/derpartment/:departmentName', async (req, res) => {
+    const departmentName = req.params.departmentName;
+
+    try {
+        // Tìm ID của khoa dựa trên tên khoa
+        const department = await Department.findOne({ name: departmentName });
+
+        if (!department) {
+            return res.status(404).json({ message: 'Khoa không tồn tại.' });
+        }
+
+        // Tìm các bệnh viện liên kết với ID khoa
+        const hospitals = await Hospital.find({ departments: department._id })
+            .populate('departments'); // Kết hợp dữ liệu từ bảng Department
+
+        if (hospitals.length === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy bệnh viện nào cho khoa này.' });
+        }
+
+        res.json(hospitals);
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách bệnh viện:', error);
+        res.status(500).json({ message: 'Có lỗi xảy ra khi lấy dữ liệu.' });
+    }
+})
 // DELETE /hospitals/:id - Xóa một bệnh viện
 router.delete('/:id', async (req, res) => {
     try {

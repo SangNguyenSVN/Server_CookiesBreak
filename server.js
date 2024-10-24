@@ -5,13 +5,15 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 const cron = require('node-cron');
-const sendReminder = require('./config/remider'); // Gọi reminder.js
+const sendReminder = require('./config/reminder'); // Gọi reminder.js
 
 // Gọi routes
 const roleRoutes = require('./routes/role');
 const authRoutes = require('./routes/auth');
 const uploadRoutes = require('./routes/upload'); // Route upload
 const userRoutes = require('./routes/user'); // Route upload
+
+console.log(process.env.EMAIL_USER, process.env.EMAIL_PASS);
 
 const apisRoutes = require('./routes/apis'); // Import routes
 
@@ -46,7 +48,7 @@ app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 
 // Thiết lập cron job để gửi nhắc nhở mỗi ngày vào lúc 8 giờ sáng
-cron.schedule('0 8 * * *', async () => {
+cron.schedule('0 18 * * *', async () => {
     try {
         await sendReminder();
         console.log('Reminders sent successfully.');

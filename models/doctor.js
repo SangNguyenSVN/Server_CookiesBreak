@@ -59,6 +59,7 @@ const doctorSchema = new mongoose.Schema({
         ref: 'Hospital', // Liên kết tới Hospital
         required: true // Bắt buộc
     },
+    appointments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' }],
     address: {
         type: String,
         required: false, // Không bắt buộc
