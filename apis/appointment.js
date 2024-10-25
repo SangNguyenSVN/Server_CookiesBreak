@@ -106,17 +106,32 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// Tìm kiếm cuộc hẹn theo ID bệnh nhân (GET /appointments/patient/:patientId)
-router.get('/patient/:patientId', async (req, res) => {
+// Tìm kiếm cuộc hẹn theo ID bác sĩ (GET /appointments/doctor/:doctorId)
+router.get('/doctor/:doctorId', async (req, res) => {
     try {
-        const appointments = await Appointment.find({ patient: req.params.patientId })
-            .populate('patient doctor status package');
-        if (appointments.length === 0) return res.status(404).json({ message: 'No appointments found for this patient' });
-        res.json(appointments);
+        // Tìm tất cả cuộc hẹn cho bác sĩ theo ID, loại trừ những cuộc hẹn có trạng thái "đã thanh toán"
+        const appointments = await Appointment.find({ 
+                doctor: req.params.doctorId 
+            })
+            .populate('doctor status package')
+            .populate({
+                path: 'status',
+                match: { name: { $ne: 'đã thanh toán' } }, // Exclude "đã thanh toán" status
+            });
+
+        // Lọc ra những cuộc hẹn không có trạng thái null
+        const filteredAppointments = appointments.filter(appointment => appointment.status !== null);
+
+        if (filteredAppointments.length === 0) {
+            return res.status(404).json({ message: 'No appointments found for this doctor' });
+        }
+        
+        res.json(filteredAppointments);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
+
 
 // Lấy các cuộc hẹn sắp tới trong vòng 24 giờ
 

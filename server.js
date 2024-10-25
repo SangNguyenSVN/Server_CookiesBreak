@@ -13,8 +13,6 @@ const authRoutes = require('./routes/auth');
 const uploadRoutes = require('./routes/upload'); // Route upload
 const userRoutes = require('./routes/user'); // Route upload
 
-console.log(process.env.EMAIL_USER, process.env.EMAIL_PASS);
-
 const apisRoutes = require('./routes/apis'); // Import routes
 
 dotenv.config(); // Tải các biến môi trường từ file .env
@@ -47,7 +45,7 @@ app.get('/', (req, res) => {
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 
-// Thiết lập cron job để gửi nhắc nhở mỗi ngày vào lúc 8 giờ sáng
+// Thiết lập cron job để gửi nhắc nhở mỗi ngày vào lúc 
 cron.schedule('0 18 * * *', async () => {
     try {
         await sendReminder();

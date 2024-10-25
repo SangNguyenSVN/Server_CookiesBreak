@@ -141,4 +141,27 @@ router.get('/sort/price', async (req, res) => {
     }
 });
 
+router.get('/hospital/:hospitalId', async (req, res) => {
+    try {
+        const { hospitalId } = req.params;
+
+        // Tìm bệnh viện theo ID và populate thông tin thuốc
+        const hospital = await Hospital.findById(hospitalId).populate({
+            path: 'medicines',
+            populate: { path: 'category' } // Populate thông tin từ category trong medicine
+        });
+
+        if (!hospital) {
+            return res.status(404).json({ error: 'Hospital not found' });
+        }
+
+        // Lấy danh sách thuốc từ bệnh viện
+        const medicines = hospital.medicines;
+
+        res.json(medicines);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;
