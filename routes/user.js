@@ -7,6 +7,7 @@ const router = express.Router();
 
 // Sử dụng patientAPI cho route /api/patients
 router.use('/patients', patientAPI);
+
 router.use('/doctors', doctorAPI);
 
 module.exports = router;

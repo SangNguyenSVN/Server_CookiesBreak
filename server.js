@@ -14,14 +14,18 @@ const uploadRoutes = require('./routes/upload'); // Route upload
 const userRoutes = require('./routes/user'); // Route upload
 
 const apisRoutes = require('./routes/apis'); // Import routes
+const { createPayment } = require('./controllers/paypal');
 
 dotenv.config(); // Tải các biến môi trường từ file .env
 const app = express();
 
 // Kết nối MongoDB
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('MongoDB Connected : http://localhost:3000'))
-    .catch(err => console.error('MongoDB connection error:', err));
+    .then(() => console.log('MongoDB Connected : http://localhost:3001'))
+    .catch(err => {
+        console.error('MongoDB connection error:', err);
+        process.exit(1); // Dừng ứng dụng nếu không thể kết nối
+    });
 
 // Sử dụng CORS
 app.use(cors());
@@ -36,6 +40,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api', apisRoutes);
 app.use('/api/user', userRoutes);
 
+// paypal
+app.post('/create-payment', createPayment);
 // Trang chủ
 app.get('/', (req, res) => {
     res.send('Welcome to the Admin Panel!');

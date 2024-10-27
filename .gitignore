@@ -43,3 +43,4 @@ coverage/
 *.swp
 *.swo
 *.bak
+.vercel

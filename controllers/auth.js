@@ -1,7 +1,8 @@
 // controllers/authController.js
 const Patient = require('../models/patient');
 const Doctor = require('../models/doctor');
-const Hospital= require('../models/hospital');
+const Hospital = require('../models/hospital');
+const Admin = require('../models/admin')
 const Role = require('../models/role');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
@@ -10,7 +11,7 @@ exports.logout = (req, res) => {
     try {
         const token = req.headers.authorization.split(' ')[1];
         console.log('Logout request received, token:', token);
-        
+
         // Xử lý thêm token vào blacklist hoặc logic khác nếu cần
         // Nếu không có lỗi, gửi phản hồi thành công
         res.status(200).json({ message: 'Đăng xuất thành công' });
@@ -20,6 +21,69 @@ exports.logout = (req, res) => {
     }
 };
 
+exports.loginAdmin = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        // Kiểm tra xem username và password có được cung cấp không
+        if (!username || !password) {
+            return res.status(400).json({ message: 'Username and password are required' });
+        }
+
+        // Tìm admin theo username
+        const admin = await Admin.findOne({ username });
+        if (!admin) {
+            return res.status(400).json({ message: 'Invalid username or password' });
+        }
+
+        // So sánh password được cung cấp với password đã được băm
+        const isPasswordValid = await admin.comparePassword(password);
+        if (!isPasswordValid) {
+            return res.status(400).json({ message: 'Invalid username or password' });
+        }
+
+        // Tạo token JWT
+        const token = jwt.sign(
+            { id: admin._id, username: admin.username, role: admin.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        // Trả về token và thông tin người dùng
+        res.status(200).json({
+            message: 'Login successful',
+            token,
+            user: {
+                username: admin.username, // Sửa tên biến từ 'user' thành 'admin' để tránh lỗi
+                role: admin.role // Có thể trả thêm thông tin khác nếu cần
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error logging in' });
+    }
+};
+
+exports.registerAdmin = async (req, res) => {
+    try {
+        const { username, password, role } = req.body;
+
+        // Check if the username already exists
+        const existingAdmin = await Admin.findOne({ username });
+        if (existingAdmin) {
+            return res.status(400).json({ message: 'Username already exists' });
+        }
+
+        // Create new admin
+        const newAdmin = new Admin({ username, password, role });
+        await newAdmin.save();
+
+        res.status(201).json({ message: 'Admin registered successfully', admin: { id: newAdmin._id, username: newAdmin.username, role: newAdmin.role } });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error registering admin' });
+    }
+};
 
 // Đăng ký bệnh nhân
 // http://locahot:3001/api/auth/register/patient
@@ -116,7 +180,7 @@ exports.registerDoctor = async (req, res) => {
 
         // Lưu bác sĩ vào cơ sở dữ liệu
         await doctor.save();
-        
+
         await Hospital.findByIdAndUpdate(hospitalId, { $addToSet: { doctors: doctor._id } });
 
         // Trả về thông tin bác sĩ cùng với thông tin vai trò
@@ -153,7 +217,7 @@ exports.login = async (req, res) => {
 
     try {
         let user;
-        
+
         // Tìm người dùng dựa trên userType
         if (userType === 'doctor') {
             user = await Doctor.findOne({ username }).populate('role');
@@ -216,7 +280,7 @@ exports.login = async (req, res) => {
                     name: user.role.name || "",
                     permissions: user.role.permissions || []
                 } : {
-                    id: "", 
+                    id: "",
                     name: "",
                     permissions: []
                 }

@@ -7,11 +7,14 @@ const authMiddleware = require('../middleware/auth');
 router.post('/register/patient', authController.registerPatient);
 // http://localhost:3000/auth/register/doctor
 router.post('/register/doctor', authController.registerDoctor);
+// http://localhost:3000/auth/register/doctor
+router.post('/register/admin', authController.registerAdmin);
 // http://localhost:3000/auth/login
 router.post('/login', authController.login);
+router.post('/login/admin', authController.loginAdmin);
 
 router.post('/logout', authMiddleware, authController.logout); // Route đăng xuất
 
-router.put('/change/password',authMiddleware, authController.updateUser);
+router.put('/change/password', authMiddleware, authController.updateUser);
 
 module.exports = router;

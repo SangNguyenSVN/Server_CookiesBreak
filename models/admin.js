@@ -1,6 +1,6 @@
 // models/admin.js
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs'); // Sử dụng bcryptjs
 
 const { Schema } = mongoose;
 
@@ -22,17 +22,17 @@ const adminSchema = new Schema({
 }, { timestamps: true });
 
 // Pre-save hook to hash the password before saving
-adminSchema.pre('save', async function(next) {
+adminSchema.pre('save', async function (next) {
     if (this.isModified('password')) {
-        this.password = await bcrypt.hash(this.password, 10); // Hash mật khẩu với salt là 10
+        const salt = await bcrypt.genSalt(10); // Tạo salt với số vòng 10
+        this.password = await bcrypt.hash(this.password, salt); // Hash mật khẩu
     }
     next();
 });
 
 // Method to compare provided password with stored password
-adminSchema.methods.comparePassword = async function(password) {
-    return await bcrypt.compare(password, this.password);
+adminSchema.methods.comparePassword = async function (password) {
+    return await bcrypt.compare(password, this.password); // So sánh mật khẩu
 };
-
 const Admin = mongoose.model('Admin', adminSchema);
 module.exports = Admin;
