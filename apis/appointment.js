@@ -2,11 +2,12 @@ const express = require('express');
 const Appointment = require('../models/appointment');
 const Doctor = require('../models/doctor');
 const Status = require('../models/status'); // Giả sử mô hình Status đã được khai báo
+const authMiddleware = require('../middleware/auth'); // Import middleware
 
 const router = express.Router();
 
 // Xem tất cả các cuộc hẹn (GET /appointments)
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
         const appointments = await Appointment.find()
             .populate('doctor status package'); // Populate để lấy dữ liệu chi tiết từ các bảng liên kết
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
 });
 
 // Xem chi tiết một cuộc hẹn theo ID (GET /appointments/:id)
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
     try {
         const appointment = await Appointment.findById(req.params.id)
             .populate('patient doctor status package');
@@ -73,7 +74,7 @@ router.post('/', async (req, res) => {
 
 
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
     const { patient, doctor, status, package, date, notes, reason, fullname, email, phoneNumber } = req.body;
 
     try {
@@ -96,7 +97,7 @@ router.put('/:id', async (req, res) => {
 
 
 // Xóa một cuộc hẹn (DELETE /appointments/:id)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         const appointment = await Appointment.findByIdAndDelete(req.params.id);
         if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
@@ -107,12 +108,12 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Tìm kiếm cuộc hẹn theo ID bác sĩ (GET /appointments/doctor/:doctorId)
-router.get('/doctor/:doctorId', async (req, res) => {
+router.get('/doctor/:doctorId', authMiddleware, async (req, res) => {
     try {
         // Tìm tất cả cuộc hẹn cho bác sĩ theo ID, loại trừ những cuộc hẹn có trạng thái "đã thanh toán"
-        const appointments = await Appointment.find({ 
-                doctor: req.params.doctorId 
-            })
+        const appointments = await Appointment.find({
+            doctor: req.params.doctorId
+        })
             .populate('doctor status package')
             .populate({
                 path: 'status',
@@ -125,7 +126,7 @@ router.get('/doctor/:doctorId', async (req, res) => {
         if (filteredAppointments.length === 0) {
             return res.status(404).json({ message: 'No appointments found for this doctor' });
         }
-        
+
         res.json(filteredAppointments);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -133,8 +134,53 @@ router.get('/doctor/:doctorId', async (req, res) => {
 });
 
 
-// Lấy các cuộc hẹn sắp tới trong vòng 24 giờ
+router.get('/count-this-month', async (req, res) => {
+    try {
+        const today = new Date();
 
+        // Thiết lập ngày bắt đầu của tháng hiện tại
+        const startOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        // Ngày hiện tại
+        const endOfCurrentMonth = today;
 
+        const count = await Appointment.countDocuments({
+            date: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth }
+        });
+
+        return res.status(200).json({ count });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+router.get('/date-time/:doctorId', async (req, res) => {
+    try {
+        const { doctorId } = req.params;
+
+        // Get tomorrow's date and the date 7 days from today
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate());
+
+        const nextWeek = new Date(today);
+        nextWeek.setDate(today.getDate() + 7);
+
+        // Find appointments for the specified doctor within 1 to 7 days from today
+        const appointments = await Appointment.find({
+            doctor: doctorId,
+            date: { $gte: tomorrow, $lt: nextWeek } // Filter for dates between tomorrow and 7 days from now
+        }, 'date time');
+
+        if (appointments.length === 0) {
+            return res.status(404).json({ message: 'No upcoming appointments found for this doctor within the next 7 days' });
+        }
+
+        res.json(appointments);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 
 module.exports = router;

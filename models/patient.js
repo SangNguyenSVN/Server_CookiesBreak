@@ -1,4 +1,3 @@
-// models/patient.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -9,7 +8,7 @@ const patientSchema = new mongoose.Schema({
         type: String, 
         required: true, 
         unique: true,
-        index: true
+        index: true // Tạo chỉ mục cho username
     },
     password: { 
         type: String, 
@@ -19,12 +18,6 @@ const patientSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-        validate: {
-            validator: function(v) {
-                return /\d{10}/.test(v);  // Đảm bảo có 10 số (tuỳ thuộc vào định dạng của bạn)
-            },
-            message: props => `${props.value} is not a valid phone number!`
-        }
     },
     role: { 
         type: Schema.Types.ObjectId,
@@ -35,7 +28,7 @@ const patientSchema = new mongoose.Schema({
         type: String,
         required: false,
         unique: true,
-        sparse: true
+        sparse: true // Chỉ mục duy nhất nhưng không bắt buộc
     }, 
     gender: { 
         type: String, 
@@ -51,11 +44,11 @@ const patientSchema = new mongoose.Schema({
         type: String,
         required: false, // Không bắt buộc
     },
-    address:{
+    address: {
         type: String,
         required: false, // Không bắt buộc
     },
-    image: { type: String },
+    image: { type: String, require: false },
 
 }, { timestamps: true });
 
@@ -67,7 +60,6 @@ patientSchema.pre('save', async function (next) {
     }
     next();
 });
-
 
 // Method to compare provided password with stored password
 patientSchema.methods.comparePassword = async function (password) {

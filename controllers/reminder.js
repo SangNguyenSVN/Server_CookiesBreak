@@ -10,9 +10,12 @@ router.get('/upcoming', async (req, res) => {
         const twentyFourHoursLater = new Date(now);
         twentyFourHoursLater.setHours(now.getHours() + 24); // Tính thời điểm 24 giờ tới
 
-        const appointments = await Appointment.find().populate('doctor status package'); // Lấy tất cả cuộc hẹn và populate dữ liệu
+        // Tìm tất cả cuộc hẹn có status.name là "chờ khám"
+        const appointments = await Appointment.find()
+            .populate('status') // Lấy dữ liệu populate
+            .exec();
 
-        // Lọc các cuộc hẹn trong khoảng thời gian 24 giờ
+        // Lọc các cuộc hẹn có status.name là "chờ khám"
         const upcomingAppointments = appointments.filter(appointment => {
             const appointmentDate = new Date(appointment.date); // Chuyển đổi date sang Date object
             const appointmentTime = moment(appointment.time, 'h:mm A'); // Chuyển đổi time thành đối tượng moment
@@ -29,7 +32,7 @@ router.get('/upcoming', async (req, res) => {
             );
 
             // Kiểm tra xem cuộc hẹn có nằm trong khoảng thời gian 24 giờ tới không
-            return fullAppointmentTime >= now && fullAppointmentTime < twentyFourHoursLater;
+            return fullAppointmentTime >= now && fullAppointmentTime < twentyFourHoursLater && appointment.status.name === 'chờ khám';
         });
 
         if (upcomingAppointments.length === 0) {

@@ -3,6 +3,8 @@ const Department = require('../models/department');
 const Hospital = require('../models/hospital'); // Nhập mô hình Hospital
 const cloudinary = require('../config/cloudinary'); // Nhập Cloudinary
 const upload = require('../config/multer'); // Nhập middleware multer
+const authMiddleware = require('../middleware/auth'); // Import middleware
+
 const router = express.Router();
 
 // POST /departments/add - Tạo mới department

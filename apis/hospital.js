@@ -118,7 +118,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
                 { hospital: hospital._id } // Cập nhật liên kết với bệnh viện
             );
         }
-
+ 
         // Cập nhật liên kết cho gói khám
         if (req.body.packages && Array.isArray(req.body.packages)) {
             await Package.updateMany(

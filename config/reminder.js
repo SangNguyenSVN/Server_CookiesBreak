@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const Appointment = require('../models/appointment');
 const nodemailer = require('nodemailer');
 const moment = require('moment');
 const axios = require('axios'); 
@@ -15,7 +14,7 @@ const transporter = nodemailer.createTransport({
 
 const sendReminder = async () => {
     try {
-        const response = await axios.get(`${process.env.API_URL}/reminder/upcoming`);
+        const response = await axios.get("http://localhost:3001/api/reminder/upcoming");
         const appointments = response.data;
 
         if (appointments.length === 0) {

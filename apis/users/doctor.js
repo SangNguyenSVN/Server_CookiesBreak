@@ -1,121 +1,128 @@
+// routes/doctor.js
 const express = require('express');
-const Doctor = require('../../models/doctor');
-const upload = require('../../config/multer'); // Nhập multer middleware
-const cloudinary = require('../../config/cloudinary'); // Nhập Cloudinary
 const router = express.Router();
+const Doctor = require('../../models/doctor'); // Import model
+const Role = require('../../models/role'); // Đảm bảo import đúng model Role
 const authMiddleware = require('../../middleware/auth'); // Import middleware
+const bcrypt = require('bcryptjs'); // Thư viện bcrypt để mã hóa mật khẩu
+const upload = require('../../config/multer'); // Import multer middleware
+const cloudinary = require('../../config/cloudinary'); // Nhập Cloudinary
 
-
-router.get('/', async (req, res) => {
+// GET /doctors - Get all doctors
+router.get('/', authMiddleware, async (req, res) => {
     try {
-        const doctors = await Doctor.find()
-            .select('fullname image specialty hospital') // Include `fullname`, `image`, `specialty`, and `hospital`
-            .populate('hospital', 'name'); // Populate `hospital` field with only the `name` (or other specific fields)
-
+        const doctors = await Doctor.find().populate('role');
         res.status(200).json(doctors);
     } catch (error) {
-        res.status(500).json({ error: 'Error fetching doctors', details: error.message });
+        res.status(500).json({ message: error.message });
     }
 });
 
+// GET /doctors/:id - Get a single doctor by ID
+router.get('/:id', authMiddleware, async (req, res) => {
+    try {
+        const doctor = await Doctor.findById(req.params.id).select('fullname username phoneNumber email specialty gender image');
+        if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+        res.status(200).json(doctor);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
+// POST /doctors - Create a new doctor with image upload
 router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     try {
-        const { fullname, username, password, phoneNumber, role, email, specialty, gender, dateOfBirth, hospital, address } = req.body;
+        const { username, password, ...otherDetails } = req.body;
 
-        // Kiểm tra và thêm bệnh viện nếu chưa tồn tại
-        let hospitalDoc = await Hospital.findOne({ name: hospital });
-        if (!hospitalDoc) {
-            return res.status(400).json({ message: 'Invalid hospital ID' });
+        // Kiểm tra xem tên người dùng đã tồn tại chưa
+        const existingDoctor = await Doctor.findOne({ username });
+        if (existingDoctor) {
+            return res.status(400).json({ message: 'Username already exists' });
         }
 
-        // Tải ảnh lên Cloudinary nếu có
+        // Kiểm tra vai trò bác sĩ
+        const role = await Role.findOne({ name: 'doctor' });
+        if (!role) {
+            return res.status(400).json({ message: 'Role "doctor" does not exist' });
+        }
+
         let imageUrl = '';
+        // Tải hình ảnh lên Cloudinary nếu có
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path);
-            imageUrl = result.secure_url;
+            imageUrl = result.secure_url; // Lưu URL của hình ảnh
         }
 
-        // Tạo mới bác sĩ
+        // Tạo mới một bác sĩ
         const doctor = new Doctor({
-            fullname,
             username,
-            password,
-            phoneNumber,
-            role,
-            email,
-            specialty,
-            gender,
-            dateOfBirth,
-            hospital: hospitalDoc._id,
-            address,
-            image: imageUrl
+            password, // Giữ nguyên mật khẩu mà không mã hóa
+            image: imageUrl,
+            role: role._id,
+            ...otherDetails
         });
 
-        // Lưu bác sĩ mới vào database
-        await doctor.save();
-
-        // Cập nhật danh sách bác sĩ trong bệnh viện
-        hospitalDoc.doctors.push(doctor._id); // Thêm ID bác sĩ vào mảng doctors của bệnh viện
-        await hospitalDoc.save();
-
-        res.status(201).json(doctor);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
+        await doctor.save(); // Lưu bác sĩ vào cơ sở dữ liệu
+        res.status(201).json({ message: 'Doctor created successfully', doctor });
+    } catch (error) {
+        console.error(error); // Ghi lại lỗi trong console để theo dõi
+        res.status(500).json({ message: error.message });
     }
 });
 
-
-// PUT /doctors/:id - Cập nhật thông tin bác sĩ
+// PUT /doctors/:id - Update an existing doctor with image upload
 router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
     try {
-        const { id } = req.params;
+        const { password, newPassword, ...updateData } = req.body;
+        // Tìm bác sĩ theo ID
+        const doctor = await Doctor.findById(req.params.id);
+        if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
 
-        // Find doctor by ID
-        const doctor = await Doctor.findById(id);
-        if (!doctor) {
-            return res.status(404).json({ message: 'Doctor not found' });
+        // Kiểm tra và cập nhật mật khẩu nếu có
+        if (password && newPassword) {
+            const isMatch = await doctor.comparePassword(password);
+            if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
+        
+            // Cập nhật mật khẩu mới và mã hóa nó
+            const salt = await bcrypt.genSalt(10);
+            doctor.password = await bcrypt.hash(newPassword, salt); // Gán mật khẩu mới sau khi mã hóa
         }
 
-        // Update image if provided
+        // Nếu có hình ảnh, tải lên Cloudinary
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path);
-            doctor.image = result.secure_url;
+            updateData.image = result.secure_url;
         }
 
-        // Update other fields
-        Object.assign(doctor, req.body);
-        await doctor.save();
+        // Cập nhật thông tin khác
+        Object.assign(doctor, updateData);
 
-        res.status(200).json(doctor);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
+        await doctor.save(); // Lưu lại các thay đổi
+        res.status(200).json({ message: 'Doctor updated successfully', doctor });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
 });
 
-// DELETE /doctors/:id - Xóa bác sĩ
+// DELETE /doctors/:id - Delete a doctor
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
-        const { id } = req.params;
-
-        const doctor = await Doctor.findByIdAndDelete(id);
-        if (!doctor) {
-            return res.status(404).json({ message: 'Doctor not found' });
-        }
-
+        const doctor = await Doctor.findByIdAndDelete(req.params.id);
+        if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
         res.status(200).json({ message: 'Doctor deleted successfully' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 });
 
-// PUT /doctors/:id - Cập nhật thông tin bác sĩ và tải lên hình ảnh
+// Cập nhật thông tin người dùng
+// PUT /doctors/update - Update current user information
 router.put('/update', authMiddleware, upload.single('image'), async (req, res) => {
     const userId = req.user.id; // Lấy id người dùng từ token
 
     // Dữ liệu cần cập nhật
-    const { phoneNumber, email, gender, dateOfBirth, specialty, fullname, address } = req.body;
-    let uploadedImageUrl = null; // Khởi tạo với null
+    const { phoneNumber, email, gender, dateOfBirth, fullname, specialty, address } = req.body;
+    let uploadedImageUrl = "";
 
     try {
         // Nếu có tệp hình ảnh, tải lên Cloudinary
@@ -124,19 +131,18 @@ router.put('/update', authMiddleware, upload.single('image'), async (req, res) =
             uploadedImageUrl = result.secure_url; // Lấy URL hình ảnh đã tải lên
         }
 
-        // Tạo đối tượng cập nhật với hình ảnh là null nếu không có
         const updateData = {
             phoneNumber,
             email,
             gender,
             dateOfBirth,
-            specialty,
             fullname,
+            specialty,
             address,
-            image: uploadedImageUrl // Gán URL hình ảnh hoặc null
+            image: uploadedImageUrl
         };
 
-        // Cập nhật thông tin người dùng
+        // Cập nhật thông tin bác sĩ
         const updatedDoctor = await Doctor.findByIdAndUpdate(
             userId,
             updateData,
@@ -144,16 +150,16 @@ router.put('/update', authMiddleware, upload.single('image'), async (req, res) =
         );
 
         if (!updatedDoctor) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: 'Doctor not found' });
         }
 
-        // Trả về thông tin người dùng đã cập nhật
+        // Trả về thông tin bác sĩ đã cập nhật
         res.status(200).json({
-            message: 'User information updated successfully',
+            message: 'Doctor information updated successfully',
             user: updatedDoctor
         });
     } catch (error) {
-        console.error('Error updating user information:', error);
+        console.error('Error updating doctor information:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });

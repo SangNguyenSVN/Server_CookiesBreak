@@ -46,7 +46,7 @@ exports.loginAdmin = async (req, res) => {
         const token = jwt.sign(
             { id: admin._id, username: admin.username, role: admin.role },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '8h' }
         );
 
         // Trả về token và thông tin người dùng
@@ -88,33 +88,35 @@ exports.registerAdmin = async (req, res) => {
 // Đăng ký bệnh nhân
 // http://locahot:3001/api/auth/register/patient
 exports.registerPatient = async (req, res) => {
-    const { username, password, phoneNumber, roleId } = req.body;
-
-    if (!username || !password || !phoneNumber || !roleId) {
-        return res.status(400).json({ message: 'Missing required fields: username, password, phoneNumber, and roleId are required' });
+    const { username, password, phoneNumber } = req.body;
+    console.log("data reigster: ", req.body)
+    // Kiểm tra xem tất cả các trường cần thiết đã được cung cấp chưa
+    if (!username || !password || !phoneNumber) {
+        return res.status(400).json({ message: 'Missing required fields: username, password, phoneNumber are required' });
     }
 
     try {
+        // Kiểm tra xem bệnh nhân đã tồn tại chưa
         const existingPatient = await Patient.findOne({ username });
         if (existingPatient) {
             return res.status(400).json({ message: 'Patient already exists' });
         }
 
-        // Kiểm tra xem vai trò có tồn tại không
-        const role = await Role.findById(roleId);
+        // Tìm vai trò dựa trên tên vai trò
+        const role = await Role.findOne({ name: 'patient' });
         if (!role) {
-            return res.status(400).json({ message: 'Invalid role ID' });
+            return res.status(400).json({ message: 'Invalid role name' });
         }
 
         // Tạo bệnh nhân mới
         const patient = new Patient({
             username,
-            password, // Sử dụng mật khẩu chưa mã hóa
+            password, // Mật khẩu đã được mã hóa trong mô hình
             phoneNumber,
-            role: roleId,
+            role: role._id, // Gán ID của vai trò
         });
 
-        // Lưu bệnh nhân vào cơ sở dữ liệu, mô hình sẽ tự động mã hóa mật khẩu
+        // Lưu bệnh nhân vào cơ sở dữ liệu
         await patient.save();
 
         // Trả về thông tin bệnh nhân cùng với thông tin vai trò
@@ -127,9 +129,9 @@ exports.registerPatient = async (req, res) => {
                 role: {
                     id: role._id,
                     name: role.name,
-                    permissions: role.permissions
-                }
-            }
+                    permissions: role.permissions,
+                },
+            },
         });
     } catch (error) {
         console.error('Error registering patient:', error);
@@ -142,10 +144,10 @@ exports.registerPatient = async (req, res) => {
 
 // Đăng ký bác sĩ
 exports.registerDoctor = async (req, res) => {
-    const { fullname, username, password, phoneNumber, roleId, hospitalId } = req.body;
+    const { fullname, username, password, phoneNumber, hospitalId } = req.body;
 
     // Kiểm tra các trường bắt buộc
-    if (!fullname || !username || !password || !phoneNumber || !roleId || !hospitalId) {
+    if (!fullname || !username || !password || !phoneNumber || !hospitalId) {
         return res.status(400).json({ message: 'Missing required fields: fullname, username, password, phoneNumber, roleId, and hospitalId are required' });
     }
 
@@ -157,9 +159,9 @@ exports.registerDoctor = async (req, res) => {
         }
 
         // Kiểm tra xem vai trò có tồn tại không
-        const role = await Role.findById(roleId);
+        const role = await Role.findOne({ name: "doctor" });
         if (!role) {
-            return res.status(400).json({ message: 'Invalid role ID' });
+            return res.status(400).json({ message: 'Invalid role name' });
         }
 
         // Kiểm tra xem bệnh viện có tồn tại không
@@ -174,7 +176,7 @@ exports.registerDoctor = async (req, res) => {
             username,
             password, // Mật khẩu sẽ được băm trong model
             phoneNumber,
-            role: roleId,
+            role: role.id,
             hospital: hospitalId
         });
 

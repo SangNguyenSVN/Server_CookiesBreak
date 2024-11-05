@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Patient = require('../../models/patient'); // Import model
+const Role = require('../../models/role'); // Đảm bảo import đúng model Role
 const authMiddleware = require('../../middleware/auth'); // Import middleware
 const bcrypt = require('bcryptjs'); // Thư viện bcrypt để mã hóa mật khẩu
 const upload = require('../../config/multer'); // Import multer middleware
@@ -9,13 +10,13 @@ const cloudinary = require('../../config/cloudinary'); // Nhập Cloudinary
 
 router.get('/', authMiddleware, async (req, res) => {
     try {
-        const patients = await Patient.find().select('fullname username phoneNumber email gender image');
+        const patients = await Patient.find();
         res.status(200).json(patients);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
-
+ 
 // GET /patients/:id - Get a single patient by ID
 router.get('/:id', authMiddleware, async (req, res) => {
     try {
@@ -26,59 +27,78 @@ router.get('/:id', authMiddleware, async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
-
+ 
 // POST /patients - Create a new patient with image upload
 router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     try {
         const { username, password, ...otherDetails } = req.body;
 
-        // Check if username already exists
+        // Kiểm tra xem tên người dùng đã tồn tại chưa
         const existingPatient = await Patient.findOne({ username });
-        if (existingPatient) return res.status(400).json({ message: 'Username already exists' });
-
-        // Hash the password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        let imageUrl = '';
-        if (req.file) {
-            const result = await cloudinary.uploader.upload(req.file.path);
-            imageUrl = result.secure_url;
+        if (existingPatient) {
+            return res.status(400).json({ message: 'Username already exists' });
         }
 
+        // Kiểm tra vai trò bệnh nhân
+        const role = await Role.findOne({ name: 'patient' });
+        if (!role) {
+            return res.status(400).json({ message: 'Role "patient" does not exist' });
+        }
+
+        let imageUrl = '';
+        // Tải hình ảnh lên Cloudinary nếu có
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            imageUrl = result.secure_url; // Lưu URL của hình ảnh
+        }
+
+        // Tạo mới một bệnh nhân
         const patient = new Patient({
             username,
-            password: hashedPassword,
+            password, // Giữ nguyên mật khẩu mà không mã hóa
             image: imageUrl,
+            role: role._id,
             ...otherDetails
         });
 
-        await patient.save();
+        await patient.save(); // Lưu bệnh nhân vào cơ sở dữ liệu
         res.status(201).json({ message: 'Patient created successfully', patient });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        console.error(error); // Ghi lại lỗi trong console để theo dõi
+        res.status(500).json({ message: error.message });
     }
 });
 
 // PUT /patients/:id - Update an existing patient with image upload
 router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
     try {
-        const { password, ...updateData } = req.body;
+        const { password, newPassword, ...updateData } = req.body;
+        console.log("data update:",req.boy)
+        // Tìm bệnh nhân theo ID
+        const patient = await Patient.findById(req.params.id);
+        if (!patient) return res.status(404).json({ message: 'Patient not found' });
+        console.log("Dữ liệu nhận được từ req.body:", req.body);
 
-        // Hash the new password if it's being updated
-        if (password) {
+        // Kiểm tra và cập nhật mật khẩu nếu có
+        if (password && newPassword) {
+            const isMatch = await patient.comparePassword(password);
+            if (!isMatch) return res.status(400).json({ message: 'Mật khẩu hiện tại không chính xác' });
+        
+            // Cập nhật mật khẩu mới và mã hóa nó
             const salt = await bcrypt.genSalt(10);
-            updateData.password = await bcrypt.hash(password, salt);
+            patient.password = await bcrypt.hash(newPassword, salt); // Gán mật khẩu mới sau khi mã hóa
         }
 
+        // Nếu có hình ảnh, thêm vào FormData
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path);
             updateData.image = result.secure_url;
         }
 
-        const patient = await Patient.findByIdAndUpdate(req.params.id, updateData, { new: true });
-        if (!patient) return res.status(404).json({ message: 'Patient not found' });
+        // Cập nhật thông tin khác
+        Object.assign(patient, updateData);
 
+        await patient.save(); // Lưu lại các thay đổi
         res.status(200).json({ message: 'Patient updated successfully', patient });
     } catch (error) {
         res.status(400).json({ message: error.message });
