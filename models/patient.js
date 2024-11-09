@@ -17,7 +17,7 @@ const patientSchema = new mongoose.Schema({
     phoneNumber: {
         type: String,
         required: true,
-        unique: true,
+        unique: false,
     },
     role: { 
         type: Schema.Types.ObjectId,

@@ -183,4 +183,40 @@ router.get('/date-time/:doctorId', async (req, res) => {
     }
 });
 
+router.get('/by-patient/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const appointments = await Appointment.find({ patient: id }).populate('status doctor package');
+
+        if (appointments.length === 0) {
+            return res.status(404).json({ message: 'No appointments found for this patient.' });
+        }
+
+        res.status(200).json(appointments);
+    } catch (error) {
+        console.error('Error fetching appointments by patient ID:', error);
+        res.status(500).json({ message: 'Server error', error });
+    }
+});
+
+// Get appointments by email
+router.get('/by-email/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+
+
+        const appointments = await Appointment.find({ email }).populate('status doctor package');
+
+        if (appointments.length === 0) {
+            return res.status(404).json({ message: 'No appointments found for this email.' });
+        }
+
+        res.status(200).json(appointments);
+    } catch (error) {
+        console.error('Error fetching appointments by email:', error);
+        res.status(500).json({ message: 'Server error', error });
+    }
+});
+
 module.exports = router;

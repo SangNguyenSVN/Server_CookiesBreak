@@ -5,8 +5,9 @@ const Medicine = require('../models/medicine');
 const Department = require('../models/department')
 const cloudinary = require('../config/cloudinary'); // Nhập Cloudinary
 const upload = require('../config/multer'); // Nhập multer middleware
+const authMiddleware = require('../middleware/auth');
 const router = express.Router();
-
+ 
 // POST /hospitals - Thêm bệnh viện mới với hình ảnh
 router.post('/', upload.single('image'), async (req, res) => {
     try {
@@ -14,31 +15,46 @@ router.post('/', upload.single('image'), async (req, res) => {
 
         let imageUrl = '';
         if (file) {
-            // Upload hình ảnh lên Cloudinary
+            // Upload the image to Cloudinary
             const result = await cloudinary.uploader.upload(file.path);
-            imageUrl = result.secure_url; // Lấy URL của hình ảnh
+            imageUrl = result.secure_url; // Get the image URL
         }
 
-        // Tạo đối tượng bệnh viện mới
-        const hospitalData = {
-            ...req.body,
-            image: imageUrl, // Thêm URL hình ảnh vào dữ liệu bệnh viện
+        // Clean up the request body by removing empty strings from arrays
+        const cleanArrayFields = (fields) => {
+            return fields.map(field => (field === "" ? undefined : field)).filter(field => field !== undefined);
         };
 
+        // Ensure arrays don't contain empty strings and are valid
+        const hospitalData = {
+            ...req.body,
+            doctors: cleanArrayFields(req.body.doctors || []),
+            departments: cleanArrayFields(req.body.departments || []),
+            medicines: cleanArrayFields(req.body.medicines || []),
+            packages: cleanArrayFields(req.body.packages || []),
+            image: imageUrl, // Add the image URL to the hospital data
+        };
+
+        console.log(hospitalData);  // Debugging line to check the cleaned data
+
+        // Create a new hospital object and save it
         const hospital = new Hospital(hospitalData);
         const savedHospital = await hospital.save();
 
-        // Trả về dữ liệu chi tiết của bệnh viện
+        // Retrieve and populate the hospital with related data
         const detailedHospital = await Hospital.findById(savedHospital._id)
-            .populate('departments') // Nạp dữ liệu phòng khám nếu cần
-            .populate('medicines') // Nạp dữ liệu thuốc nếu cần
-            .populate('packages'); // Nạp dữ liệu gói dịch vụ nếu cần
+            .populate('departments') // Populate departments if needed
+            .populate('medicines') // Populate medicines if needed
+            .populate('packages'); // Populate packages if needed
 
+        // Return the created hospital data
         res.status(201).json(detailedHospital);
     } catch (err) {
+        console.error(err); // Log the error for debugging
         res.status(400).json({ message: err.message });
     }
 });
+
 
 // GET /hospitals - Lấy danh sách tất cả bệnh viện
 router.get('/', async (req, res) => {
@@ -75,11 +91,11 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /hospitals/:id - Cập nhật thông tin bệnh viện
-router.put('/:id', upload.single('image'), async (req, res) => {
+router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
     try {
         const { file } = req; // Giả sử bạn gửi ID gói và thuốc qua req.body
         const updateData = { ...req.body };
-
+        console.log(updateData)
         // Nếu có file hình ảnh mới, upload lên Cloudinary
         if (file) {
             try {

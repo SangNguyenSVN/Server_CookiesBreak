@@ -1,18 +1,19 @@
 const mongoose = require('mongoose');
- 
-const hospitalSchema = new mongoose.Schema({ 
+
+const hospitalSchema = new mongoose.Schema({
     image: { type: String },
     name: { type: String, required: true, unique: true },
     location: { type: String },
+    email: { type: String, required: false, unique: true },
     phoneNumber: { type: String, required: true },
-    doctors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' }],
-    departments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Department' }],
-    medicines: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Medicine' }],
-    packages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Package' }]
+    doctors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: false }],
+    departments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: false }],
+    medicines: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Medicine', required: false }],
+    packages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Package', required: false }]
 }, { timestamps: true });
 
 // Middleware để xóa bệnh viện và cập nhật liên kết trong các mô hình khác
-hospitalSchema.pre('remove', async function(next) {
+hospitalSchema.pre('remove', async function (next) {
     const hospitalId = this._id;
 
     // Cập nhật tất cả bác sĩ để xóa liên kết với bệnh viện này

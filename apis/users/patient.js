@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs'); // Thư viện bcrypt để mã hóa mật k
 const upload = require('../../config/multer'); // Import multer middleware
 const cloudinary = require('../../config/cloudinary'); // Nhập Cloudinary
 
-
+ 
 router.get('/', authMiddleware, async (req, res) => {
     try {
         const patients = await Patient.find();
@@ -32,7 +32,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     try {
         const { username, password, ...otherDetails } = req.body;
-
+        console.log(req.body)
         // Kiểm tra xem tên người dùng đã tồn tại chưa
         const existingPatient = await Patient.findOne({ username });
         if (existingPatient) {
@@ -85,8 +85,7 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
             if (!isMatch) return res.status(400).json({ message: 'Mật khẩu hiện tại không chính xác' });
         
             // Cập nhật mật khẩu mới và mã hóa nó
-            const salt = await bcrypt.genSalt(10);
-            patient.password = await bcrypt.hash(newPassword, salt); // Gán mật khẩu mới sau khi mã hóa
+            patient.password = newPassword; // Gán mật khẩu mới sau khi mã hóa
         }
 
         // Nếu có hình ảnh, thêm vào FormData
@@ -167,6 +166,33 @@ router.put('/update', authMiddleware, upload.single('image'), async (req, res) =
 
 
 
+router.put('/change-password/:id',authMiddleware, async (req, res) => {
+    try {
+        const { password, newPassword } = req.body;
+        console.log(req.body)
+        // Find patient by ID
+        const patient = await Patient.findById(req.params.id);
+        if (!patient) {
+            return res.status(404).json({ message: 'Patient not found' });
+        }
 
+        // Verify current password
+        const isMatch = await patient.comparePassword(password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+
+        // Hash the new password
+        patient.password = newPassword;
+
+        // Save the updated patient record
+        await patient.save();
+
+        res.status(200).json({ message: 'Password changed successfully' });
+    } catch (error) {
+        console.error('Error changing password:', error);
+        res.status(500).json({ message: 'Failed to change password' });
+    }
+});
 
 module.exports = router;

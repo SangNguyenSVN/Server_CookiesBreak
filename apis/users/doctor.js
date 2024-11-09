@@ -84,8 +84,7 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
             if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
         
             // Cập nhật mật khẩu mới và mã hóa nó
-            const salt = await bcrypt.genSalt(10);
-            doctor.password = await bcrypt.hash(newPassword, salt); // Gán mật khẩu mới sau khi mã hóa
+            doctor.password = newPassword; // Gán mật khẩu mới sau khi mã hóa
         }
 
         // Nếu có hình ảnh, tải lên Cloudinary
@@ -161,6 +160,35 @@ router.put('/update', authMiddleware, upload.single('image'), async (req, res) =
     } catch (error) {
         console.error('Error updating doctor information:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+router.put('/change-password/:id', authMiddleware, async (req, res) => {
+    try {
+        const { password, newPassword } = req.body;
+
+        // Find doctor by ID
+        const doctor = await Doctor.findById(req.params.id);
+        if (!doctor) {
+            return res.status(404).json({ message: 'Doctor not found' });
+        }
+
+        // Verify current password
+        const isMatch = await doctor.comparePassword(password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+
+       
+        doctor.password = newPassword;
+
+        // Save the updated doctor record
+        await doctor.save();
+
+        res.status(200).json({ message: 'Password changed successfully' });
+    } catch (error) {
+        console.error('Error changing password:', error);
+        res.status(500).json({ message: 'Failed to change password' });
     }
 });
 
