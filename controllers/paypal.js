@@ -1,21 +1,19 @@
 const axios = require('axios');
 require('dotenv').config();
-const Payment = require("../models/payment"); // Import mô hình Payment
+const Payment = require("../models/payment"); 
 
 const createPayment = async (req, res) => {
-    const { total, currency, patientId } = req.body; // Thêm patientId vào destructuring
+    const { total, currency, patientId, appointmentId } = req.body;
 
-    console.log('body :', req.body); // Kiểm tra giá trị sau khi chuyển đổi
-    // Kiểm tra và định dạng số tiền
+    console.log('body:', req.body);
     const parsedTotal = parseFloat(total);
     if (isNaN(parsedTotal) || parsedTotal <= 0) {
-        console.log('Invalid total amount:', total); // In ra giá trị không hợp lệ
+        console.log('Invalid total amount:', total);
         return res.status(400).json({ error: 'Invalid total amount' });
     }
-    const formattedTotal = parsedTotal.toFixed(2); // Chuyển đổi và định dạng thành chuỗi với hai chữ số thập phân
+    const formattedTotal = parsedTotal.toFixed(2);
 
-    // Kiểm tra loại tiền tệ (có thể thêm danh sách tiền tệ hợp lệ nếu cần)
-    const validCurrencies = ['USD', 'EUR', 'VND']; // Thêm các loại tiền tệ khác nếu cần
+    const validCurrencies = ['USD', 'EUR', 'VND'];
     if (!validCurrencies.includes(currency)) {
         return res.status(400).json({ error: 'Invalid currency' });
     }
@@ -25,7 +23,6 @@ const createPayment = async (req, res) => {
     const SECRET = process.env.PAYPAL_SECRET;
 
     try {
-        // Tạo token
         const auth = Buffer.from(`${CLIENT_ID}:${SECRET}`).toString('base64');
         const tokenResponse = await axios.post('https://api-m.sandbox.paypal.com/v1/oauth2/token', null, {
             headers: {
@@ -41,7 +38,7 @@ const createPayment = async (req, res) => {
 
         // Tạo thanh toán
         const paymentResponse = await axios.post(PAYPAL_API_URL, {
-            intent: 'sale',
+            intent: 'sale', // Hoặc 'authorize' hoặc 'order'
             payer: {
                 payment_method: 'paypal',
             },
@@ -50,11 +47,11 @@ const createPayment = async (req, res) => {
                     total: formattedTotal,
                     currency,
                 },
-                description: 'Payment description',
+                description: 'Payment for appointment',
             }],
             redirect_urls: {
-                return_url: 'http://localhost:3001/success',
-                cancel_url: 'http://localhost:3001/cancel',
+                return_url: 'http://localhost:3001/success', // URL khi thanh toán thành công
+                cancel_url: 'http://localhost:3001/cancel', // URL khi người dùng hủy thanh toán
             },
         }, {
             headers: {
@@ -65,18 +62,20 @@ const createPayment = async (req, res) => {
 
         // Lưu thông tin thanh toán vào cơ sở dữ liệu
         const paymentData = {
-            patientId, // Cung cấp patientId
+            patientId, 
+            appointmentId,
             total: parsedTotal,
             currency,
             paymentId: paymentResponse.data.id,
-            status: 'pending', // Đặt trạng thái là 'pending'
         };
 
         const newPayment = new Payment(paymentData);
         await newPayment.save();
 
-        // Trả về phản hồi từ PayPal
-        res.json(paymentResponse.data);
+        // Trả về URL chuyển hướng để front-end chuyển hướng người dùng tới PayPal
+        const approvalUrl = paymentResponse.data.links.find(link => link.rel === 'approval_url').href;
+
+        res.json({ approvalUrl });
     } catch (error) {
         console.error('Error response:', error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'Unable to create payment', details: error.response ? error.response.data : null });

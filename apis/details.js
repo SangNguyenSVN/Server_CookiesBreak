@@ -1,49 +1,66 @@
 const express = require('express');
 const router = express.Router();
 const MedicineDetails = require('../models/details');
-const Medicine = require('../models/medicine');
 
-// Thêm chi tiết cho một loại thuốc
-router.post('/add', async (req, res) => {
+
+router.get('/:id', async (req, res) => {
     try {
-      const { medicine, price, quantity } = req.body;
-  
-      // Lưu thông tin chi tiết thuốc với medicine là chuỗi
-      const newMedicineDetails = new MedicineDetails({
-        medicine,  // Đây là một chuỗi thay vì ObjectId
-        price,
-        quantity
-      });
-  
-      await newMedicineDetails.save();
-      res.status(201).json(newMedicineDetails);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-router.get('/', async (req, res) => {
-    try {
-        const medicineDetails = await MedicineDetails.find().populate('medicine');
-        res.status(200).json(medicineDetails);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        const medicineDetail = await MedicineDetails.findById(req.params.id)
+            .populate('medicines.id');  // Populating thông tin thuốc từ model Medicine
+
+        if (!medicineDetail) {
+            return res.status(404).send('Chi tiết thuốc không tồn tại');
+        }
+
+        res.json(medicineDetail);
+    } catch (error) {
+        console.error('Lỗi khi truy vấn chi tiết thuốc:', error);
+        res.status(500).send('Lỗi khi truy vấn dữ liệu');
     }
 });
-// Sửa chi tiết thuốc
+
+router.post('/', async (req, res) => {
+    try {
+        const { medicines } = req.body; // Dữ liệu gửi từ client (ví dụ: [{ id, quantity }, { id, quantity }])
+
+        // Tạo đối tượng MedicineDetails mới
+        const medicineDetail = new MedicineDetails({
+            medicines: medicines.map(medicine => ({
+                id: medicine.id,
+                quantity: medicine.quantity,
+            }))
+        });
+
+        // Lưu chi tiết thuốc vào cơ sở dữ liệu
+        await medicineDetail.save();
+
+        // Trả về chi tiết thuốc đã lưu với thông tin thuốc đầy đủ
+        const populatedDetail = await MedicineDetails.findById(medicineDetail._id)
+            .populate('medicines.id'); // Populating thông tin thuốc từ model Medicine
+
+        res.status(201).json(populatedDetail); // Trả về chi tiết thuốc đã được populate
+    } catch (error) {
+        console.error('Lỗi khi thêm chi tiết thuốc:', error);
+        res.status(500).send('Lỗi khi thêm chi tiết thuốc');
+    }
+});
+
 router.put('/:id', async (req, res) => {
     try {
-        const { price, quantity } = req.body;
-
-        const updatedMedicineDetails = await MedicineDetails.findByIdAndUpdate(
+        const updatedDetail = await MedicineDetails.findByIdAndUpdate(
             req.params.id,
-            { price, quantity },
-            { new: true }
-        );
+            { $set: req.body },  // Cập nhật theo dữ liệu mới từ req.body
+            { new: true }         // Trả về đối tượng đã được cập nhật
+        ).populate('medicines.id');  // Populating thông tin thuốc từ model Medicine
 
-        if (!updatedMedicineDetails) return res.status(404).json({ message: 'Medicine details not found' });
-        res.status(200).json(updatedMedicineDetails);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        if (!updatedDetail) {
+            return res.status(404).send('Chi tiết thuốc không tồn tại');
+        }
+
+        res.json(updatedDetail);
+    } catch (error) {
+        console.error('Lỗi khi cập nhật chi tiết thuốc:', error);
+        res.status(500).send('Lỗi khi cập nhật dữ liệu');
     }
 });
 // Xóa chi tiết thuốc

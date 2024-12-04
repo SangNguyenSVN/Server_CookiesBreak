@@ -4,7 +4,6 @@ const router = express.Router();
 const Doctor = require('../../models/doctor'); // Import model
 const Role = require('../../models/role'); // Đảm bảo import đúng model Role
 const authMiddleware = require('../../middleware/auth'); // Import middleware
-const bcrypt = require('bcryptjs'); // Thư viện bcrypt để mã hóa mật khẩu
 const upload = require('../../config/multer'); // Import multer middleware
 const cloudinary = require('../../config/cloudinary'); // Nhập Cloudinary
 
@@ -30,7 +29,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 });
 
 // POST /doctors - Create a new doctor with image upload
-router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
+router.post('/', upload.single('image'), async (req, res) => {
     try {
         const { username, password, ...otherDetails } = req.body;
 

@@ -29,7 +29,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 });
  
 // POST /patients - Create a new patient with image upload
-router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
+router.post('/', upload.single('image'), async (req, res) => {
     try {
         const { username, password, ...otherDetails } = req.body;
         console.log(req.body)

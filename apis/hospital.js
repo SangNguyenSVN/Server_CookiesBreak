@@ -3,6 +3,7 @@ const Hospital = require('../models/hospital');
 const Package = require('../models/package');
 const Medicine = require('../models/medicine');
 const Department = require('../models/department')
+const Doctor = require('../models/doctor')
 const cloudinary = require('../config/cloudinary'); // Nhập Cloudinary
 const upload = require('../config/multer'); // Nhập multer middleware
 const authMiddleware = require('../middleware/auth');
@@ -93,66 +94,122 @@ router.get('/:id', async (req, res) => {
 // PUT /hospitals/:id - Cập nhật thông tin bệnh viện
 router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
     try {
-        const { file } = req; // Giả sử bạn gửi ID gói và thuốc qua req.body
+        const { file } = req;
         const updateData = { ...req.body };
-        console.log(updateData)
-        // Nếu có file hình ảnh mới, upload lên Cloudinary
+
+        // Parse các chuỗi JSON thành mảng
+        if (typeof updateData.doctors === 'string') {
+            updateData.doctors = JSON.parse(updateData.doctors);
+        }
+        if (typeof updateData.departments === 'string') {
+            updateData.departments = JSON.parse(updateData.departments);
+        }
+        if (typeof updateData.medicines === 'string') {
+            updateData.medicines = JSON.parse(updateData.medicines);
+        }
+        if (typeof updateData.packages === 'string') {
+            updateData.packages = JSON.parse(updateData.packages);
+        }
+
+        console.log(updateData);
+
+        // Tải ảnh lên Cloudinary nếu có
         if (file) {
             try {
                 const result = await cloudinary.uploader.upload(file.path);
-                updateData.image = result.secure_url; // Cập nhật URL hình ảnh
+                updateData.image = result.secure_url;
             } catch (uploadError) {
-                return res.status(400).json({ message: 'Image upload failed: ' + uploadError.message });
+                return res.status(400).json({ message: 'Tải lên hình ảnh thất bại: ' + uploadError.message });
             }
         }
 
+        // Cập nhật bệnh viện
         const hospital = await Hospital.findByIdAndUpdate(req.params.id, updateData, { new: true });
         if (!hospital) {
             return res.status(404).json({ message: 'Bệnh viện không tồn tại' });
         }
 
-        // Cập nhật liên kết cho các bác sĩ
-        if (req.body.doctors && Array.isArray(req.body.doctors)) {
-            await Doctor.updateMany(
-                { _id: { $in: req.body.doctors } },
-                { hospital: hospital._id } // Cập nhật liên kết với bệnh viện
-            );
+        // Kiểm tra và xử lý mảng bác sĩ
+        if (Array.isArray(updateData.doctors)) {
+            if (updateData.doctors.length === 0) {
+                // Nếu mảng bác sĩ rỗng, xóa tất cả liên kết bác sĩ với bệnh viện này
+                await Doctor.updateMany(
+                    { hospital: hospital._id },
+                    { $unset: { hospital: "" } }
+                );
+            } else {
+                // Nếu có bác sĩ, cập nhật liên kết cho các bác sĩ
+                await Doctor.updateMany(
+                    { _id: { $in: updateData.doctors } },
+                    { hospital: hospital._id }
+                );
+            }
         }
 
-        // Cập nhật liên kết cho các phòng
-        if (req.body.departments && Array.isArray(req.body.departments)) {
-            await Department.updateMany(
-                { _id: { $in: req.body.departments } },
-                { hospital: hospital._id } // Cập nhật liên kết với bệnh viện
-            );
+        // Kiểm tra và xử lý mảng phòng ban
+        if (Array.isArray(updateData.departments)) {
+            if (updateData.departments.length === 0) {
+                // Nếu mảng phòng ban rỗng, xóa tất cả liên kết phòng ban với bệnh viện này
+                await Department.updateMany(
+                    { hospital: hospital._id },
+                    { $unset: { hospital: "" } }
+                );
+            } else {
+                // Nếu có phòng ban, cập nhật liên kết cho các phòng ban
+                await Department.updateMany(
+                    { _id: { $in: updateData.departments } },
+                    { hospital: hospital._id }
+                );
+            }
         }
 
-        // Cập nhật liên kết cho thuốc
-        if (req.body.medicines && Array.isArray(req.body.medicines)) {
-            await Medicine.updateMany(
-                { _id: { $in: req.body.medicines } },
-                { hospital: hospital._id } // Cập nhật liên kết với bệnh viện
-            );
-        }
- 
-        // Cập nhật liên kết cho gói khám
-        if (req.body.packages && Array.isArray(req.body.packages)) {
-            await Package.updateMany(
-                { _id: { $in: req.body.packages } },
-                { hospital: hospital._id } // Cập nhật liên kết với bệnh viện
-            );
+        // Kiểm tra và xử lý mảng thuốc
+        if (Array.isArray(updateData.medicines)) {
+            if (updateData.medicines.length === 0) {
+                // Nếu mảng thuốc rỗng, xóa tất cả liên kết thuốc với bệnh viện này
+                await Medicine.updateMany(
+                    { hospital: hospital._id },
+                    { $unset: { hospital: "" } }
+                );
+            } else {
+                // Nếu có thuốc, cập nhật liên kết cho các thuốc
+                await Medicine.updateMany(
+                    { _id: { $in: updateData.medicines } },
+                    { hospital: hospital._id }
+                );
+            }
         }
 
+        // Kiểm tra và xử lý mảng gói dịch vụ
+        if (Array.isArray(updateData.packages)) {
+            if (updateData.packages.length === 0) {
+                // Nếu mảng gói dịch vụ rỗng, xóa tất cả liên kết gói dịch vụ với bệnh viện này
+                await Package.updateMany(
+                    { hospital: hospital._id },
+                    { $unset: { hospital: "" } }
+                );
+            } else {
+                // Nếu có gói dịch vụ, cập nhật liên kết cho các gói dịch vụ
+                await Package.updateMany(
+                    { _id: { $in: updateData.packages } },
+                    { hospital: hospital._id }
+                );
+            }
+        }
+
+        // Trả về thông tin bệnh viện đã được cập nhật
         res.status(200).json(hospital);
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
 });
 
-//Get   api/getbyderpartmene
-router.get('/derpartment/:departmentName', async (req, res) => {
-    const departmentName = req.params.departmentName;
 
+
+
+//Get   api/getbyderpartmene
+router.get('/department/:departmentName', async (req, res) => {
+    const departmentName = req.params.departmentName;
     try {
         // Tìm ID của khoa dựa trên tên khoa
         const department = await Department.findOne({ name: departmentName });

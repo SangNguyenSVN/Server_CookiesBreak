@@ -5,7 +5,11 @@ const packageSchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true },
     description: { type: String },
-    hospital: { // Thêm trường để liên kết với bệnh viện
+    services: {
+        type: [String],
+        required: false,
+    },
+    hospital: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Hospital',
         required: true // Bắt buộc

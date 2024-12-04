@@ -6,26 +6,26 @@ const paymentSchema = new mongoose.Schema({
         required: true,
         ref: 'Patient',
     },
+    appointmentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        ref: 'Appointment',
+    },
     total: {
         type: Number,
         required: true,
-        min: 0, // Số tiền phải lớn hơn hoặc bằng 0
+        min: 0, 
     },
     currency: {
         type: String,
-        enum: ['USD', 'EUR', 'VND'], // Chỉ cho phép các loại tiền tệ này
+        enum: ['USD', 'EUR', 'VND'], 
         required: true,
-    },
-    status: {
-        type: String,
-        enum: ['completed', 'pending', 'failed'],
-        default: 'pending',
     },
     paymentId: {
         type: String,
         required: true,
     }, 
-}, { timestamps: true }); // Tự động thêm createdAt và updatedAt
+}, { timestamps: true }); 
 
 paymentSchema.index({ patientId: 1 });
 

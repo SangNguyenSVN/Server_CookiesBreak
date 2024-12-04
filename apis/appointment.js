@@ -2,23 +2,24 @@ const express = require('express');
 const Appointment = require('../models/appointment');
 const Doctor = require('../models/doctor');
 const Status = require('../models/status'); // Giả sử mô hình Status đã được khai báo
-const authMiddleware = require('../middleware/auth'); // Import middleware
+const authMiddleware = require('../middleware/auth');
+// const authMiddleware = require('../middleware/auth'); // Import middleware
 
 const router = express.Router();
 
 // Xem tất cả các cuộc hẹn (GET /appointments)
-router.get('/', authMiddleware, async (req, res) => {
-    try {
-        const appointments = await Appointment.find()
-            .populate('doctor status package'); // Populate để lấy dữ liệu chi tiết từ các bảng liên kết
-        res.json(appointments);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+// router.get('/', async (req, res) => {
+//     try {
+//         const appointments = await Appointment.find()
+//             .populate('doctor status package'); // Populate để lấy dữ liệu chi tiết từ các bảng liên kết
+//         res.json(appointments);
+//     } catch (err) {
+//         res.status(500).json({ message: err.message });
+//     }
+// });
 
 // Xem chi tiết một cuộc hẹn theo ID (GET /appointments/:id)
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const appointment = await Appointment.findById(req.params.id)
             .populate('patient doctor status package');
@@ -74,7 +75,7 @@ router.post('/', async (req, res) => {
 
 
 
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', async (req, res) => {
     const { patient, doctor, status, package, date, notes, reason, fullname, email, phoneNumber } = req.body;
 
     try {
@@ -97,7 +98,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
 
 // Xóa một cuộc hẹn (DELETE /appointments/:id)
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         const appointment = await Appointment.findByIdAndDelete(req.params.id);
         if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
@@ -108,7 +109,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 });
 
 // Tìm kiếm cuộc hẹn theo ID bác sĩ (GET /appointments/doctor/:doctorId)
-router.get('/doctor/:doctorId', authMiddleware, async (req, res) => {
+router.get('/doctor/:doctorId', async (req, res) => {
     try {
         // Tìm tất cả cuộc hẹn cho bác sĩ theo ID, loại trừ những cuộc hẹn có trạng thái "đã thanh toán"
         const appointments = await Appointment.find({
@@ -216,6 +217,94 @@ router.get('/by-email/:email', async (req, res) => {
     } catch (error) {
         console.error('Error fetching appointments by email:', error);
         res.status(500).json({ message: 'Server error', error });
+    }
+});
+
+router.get('/appointments/doctor/:doctorId', async (req, res) => {
+    try {
+        const { doctorId } = req.params;
+
+        // Find all appointments for the doctor, excluding those with status name 'chờ khám'
+        const appointments = await Appointment.find({
+            doctor: doctorId,
+            'status.name': { $ne: 'Chờ khám' }, // Filter out appointments with 'chờ khám' status
+        })
+            .populate('patient') // Populate patient data (optional)
+            .populate('doctor') // Populate doctor data (optional)
+            .populate('status') // Populate status data (optional)
+            .populate('package'); // Populate package data (optional)
+
+        // Return the appointments
+        res.json(appointments);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error', error });
+    }
+});
+
+
+router.get('/', async (req, res) => {
+    try {
+        const appointments = await Appointment.find()
+            .populate('patient doctor status package') // Populate related fields if needed
+            .sort({ date: -1, time: -1 }); // Sort by date and time in descending order
+
+        res.status(200).json(appointments);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching appointments', error });
+    }
+});
+
+router.get('/next-7-days', async (req, res) => {
+    try {
+        const today = new Date();
+        const nextWeek = new Date(today);
+        nextWeek.setDate(today.getDate() + 7); // Set the date to 7 days from today
+
+        const appointments = await Appointment.find({
+            date: { $gte: today, $lte: nextWeek }
+        })
+            .populate('patient doctor status package') // Populate related fields if needed
+            .sort({ date: 1, time: 1 }); // Sort by date and time in ascending order
+
+        res.status(200).json(appointments);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching upcoming appointments', error });
+    }
+});
+
+router.put('/update-status/:appointmentId', authMiddleware, async (req, res) => {
+    const { appointmentId } = req.params; // ID của lịch khám
+    const { statusName, reason } = req.body; // Tên trạng thái mới
+
+    try {
+        // Tìm status có name bằng `statusName`
+        const status = await Status.findOne({ name: statusName });
+        if (!status) {
+            return res.status(404).json({ message: 'Status không tồn tại.' });
+        }
+
+        // Cập nhật status cho Appointment
+        const appointment = await Appointment.findByIdAndUpdate(
+            appointmentId,
+            { 
+                status: status._id,
+                reason: reason,
+             },
+            { new: true } 
+        );
+
+        if (!appointment) {
+            return res.status(404).json({ message: 'Lịch khám không tồn tại.' });
+        }
+
+        res.status(200).json({
+            message: 'Cập nhật trạng thái thành công.',
+            appointment,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi server.', error: error.message });
     }
 });
 

@@ -41,7 +41,7 @@ app.use('/api', apisRoutes);
 app.use('/api/user', userRoutes);
 
 // paypal
-app.post('/create-payment', createPayment);
+app.post('/api/create-payment', createPayment);
 // Trang chủ
 app.get('/', (req, res) => {
     res.send('Welcome to the Admin Panel!');

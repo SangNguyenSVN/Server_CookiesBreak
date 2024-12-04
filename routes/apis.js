@@ -1,37 +1,40 @@
-const express = require('express');
-const departmentAPI = require('../apis/department');
-const hospitalAPI = require('../apis/hospital');
-const packageAPI = require('../apis/package');
-const medicineAPI = require('../apis/medicine')
-const categoryAPI = require('../apis/category')
-const detailAPI = require('../apis/details')
-const statusAPI = require('../apis/status')
-const newsAPI = require('../apis/news');
-const apmAPI = require('../apis/appointment')
+    const express = require('express');
+    const departmentAPI = require('../apis/department');
+    const hospitalAPI = require('../apis/hospital');
+    const packageAPI = require('../apis/package');
+    const medicineAPI = require('../apis/medicine')
+    const categoryAPI = require('../apis/category')
+    const detailAPI = require('../apis/details')
+    const statusAPI = require('../apis/status')
+    const newsAPI = require('../apis/news');
+    const apmAPI = require('../apis/appointment')
+    const recordAPI = require('../apis/record')
+    const remiderAPI = require('../controllers/reminder')
+    const evalutionAPI = require('../apis/evalution')
+    const router = express.Router();
 
-const remiderAPI = require('../controllers/reminder')
+    // Sử dụng các route API
+    router.use('/departments', departmentAPI);
 
-const router = express.Router();
+    router.use('/hospitals', hospitalAPI);
 
-// Sử dụng các route API
-router.use('/departments', departmentAPI);
+    router.use('/packages', packageAPI);
 
-router.use('/hospitals', hospitalAPI);
+    router.use('/medicines', medicineAPI);
 
-router.use('/packages', packageAPI);
+    router.use('/categories', categoryAPI);
 
-router.use('/medicines', medicineAPI);
+    router.use('/details', detailAPI);
 
-router.use('/categories', categoryAPI);
+    router.use('/status', statusAPI);
 
-router.use('/details', detailAPI);
+    router.use('/appointments', apmAPI);
 
-router.use('/status', statusAPI);
+    router.use('/news', newsAPI);
 
-router.use('/appointments', apmAPI);
+    router.use('/reminder', remiderAPI);
 
-router.use('/news', newsAPI);
+    router.use('/records', recordAPI);
 
-router.use('/reminder', remiderAPI);
-
-module.exports = router;
+    router.use('/evalutions', evalutionAPI)
+    module.exports = router;

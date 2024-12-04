@@ -274,6 +274,7 @@ exports.login = async (req, res) => {
                     gender: user.gender || "",
                     dateOfBirth: user.dateOfBirth ? user.dateOfBirth : null,
                     fullname: user.fullname || "",
+                    hospital:user.hospital || "",
                     address: user.address || "",
                     image: user.image || "", // Thêm trường URL ảnh
                 },
@@ -324,3 +325,42 @@ exports.updateUser = async (req, res) => {
     }
 };
 
+exports.resetPassword = async (req, res) => {
+    const { token } = req.params;  // Token lấy từ URL
+    const { newPassword } = req.body; // Mật khẩu mới từ người dùng
+
+    try {
+        // Xác thực token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.id;
+
+        // Tìm người dùng dựa trên userId (doctor hoặc patient)
+        let user;
+        if (decoded.userType === 'doctor') {
+            user = await Doctor.findById(userId);
+        } else if (decoded.userType === 'patient') {
+            user = await Patient.findById(userId);
+        } else {
+            return res.status(400).json({
+                message: 'Invalid user type.',
+            });
+        }
+
+        // Mã hóa mật khẩu mới
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Cập nhật mật khẩu cho người dùng
+        user.password = hashedPassword;
+        await user.save();
+
+        res.status(200).json({
+            message: 'Password has been reset successfully.',
+        });
+    } catch (error) {
+        console.error("Reset password error:", error);
+        res.status(500).json({
+            message: 'Internal server error',
+            error: error.message,
+        });
+    }
+};
