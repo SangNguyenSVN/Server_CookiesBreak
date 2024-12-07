@@ -1,6 +1,7 @@
 const axios = require('axios');
 require('dotenv').config();
-const Payment = require("../models/payment"); 
+const Payment = require("../models/payment");
+const Appointment = require("../models/appointment")
 
 const createPayment = async (req, res) => {
     const { total, currency, patientId, appointmentId } = req.body;
@@ -11,14 +12,29 @@ const createPayment = async (req, res) => {
         console.log('Invalid total amount:', total);
         return res.status(400).json({ error: 'Invalid total amount' });
     }
-    const formattedTotal = parsedTotal.toFixed(2);
+    let formattedTotal = parsedTotal;
+
+    // Nếu currency là VND, lấy tỷ giá từ USD -> VND
+    if (currency === 'VND') {
+        try {
+            const exchangeRateResponse = await axios.get(`${API_URL}${EXCHANGE_RATE_API_KEY}/pair/USD/VND`);
+            const exchangeRate = exchangeRateResponse.data.conversion_rate;
+
+            // Chuyển đổi từ VND sang USD
+            formattedTotal = parsedTotal / exchangeRate;
+            currency = 'USD';  // Đổi currency sang USD
+        } catch (error) {
+            console.error('Error getting exchange rate:', error);
+            return res.status(500).json({ error: 'Unable to fetch exchange rate' });
+        }
+    }
 
     const validCurrencies = ['USD', 'EUR', 'VND'];
     if (!validCurrencies.includes(currency)) {
         return res.status(400).json({ error: 'Invalid currency' });
     }
 
-    const PAYPAL_API_URL = process.env.PAYPAL_API_URL;
+    const PAYPAL_API_URL = 'https://api-m.sandbox.paypal.com/v1/payments/payment'; // URL chính xác cho sandbox
     const CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
     const SECRET = process.env.PAYPAL_SECRET;
 
@@ -44,13 +60,13 @@ const createPayment = async (req, res) => {
             },
             transactions: [{
                 amount: {
-                    total: formattedTotal,
+                    total: formattedTotal.toFixed(2), // Làm tròn số tiền để gửi tới PayPal
                     currency,
                 },
                 description: 'Payment for appointment',
             }],
             redirect_urls: {
-                return_url: 'http://localhost:3001/success', // URL khi thanh toán thành công
+                return_url: 'http://192.168.1.3:8081/_expo/', // URL khi thanh toán thành công
                 cancel_url: 'http://localhost:3001/cancel', // URL khi người dùng hủy thanh toán
             },
         }, {
@@ -64,7 +80,7 @@ const createPayment = async (req, res) => {
         const paymentData = {
             patientId, 
             appointmentId,
-            total: parsedTotal,
+            total: formattedTotal,
             currency,
             paymentId: paymentResponse.data.id,
         };
@@ -74,13 +90,12 @@ const createPayment = async (req, res) => {
 
         // Trả về URL chuyển hướng để front-end chuyển hướng người dùng tới PayPal
         const approvalUrl = paymentResponse.data.links.find(link => link.rel === 'approval_url').href;
-
+        console.log(approvalUrl)
         res.json({ approvalUrl });
     } catch (error) {
         console.error('Error response:', error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'Unable to create payment', details: error.response ? error.response.data : null });
     }
 };
-
 
 module.exports = { createPayment };
