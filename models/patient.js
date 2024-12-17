@@ -4,6 +4,10 @@ const bcrypt = require('bcryptjs');
 const { Schema } = mongoose;
 
 const patientSchema = new mongoose.Schema({
+    fullname: {  
+        type: String,
+        required: false, // Không bắt buộc
+    },
     username: { 
         type: String, 
         required: true, 
@@ -16,8 +20,13 @@ const patientSchema = new mongoose.Schema({
     },
     phoneNumber: {
         type: String,
-        required: true,
-        unique: false,
+        required: true, // Bắt buộc
+        unique: true,
+        validate: {
+            validator: function (v) {
+                return /\d{10}/.test(v);  // Đảm bảo có 10 số (tuỳ thuộc vào định dạng của bạn)
+            }
+        }
     },
     role: { 
         type: Schema.Types.ObjectId,
@@ -31,18 +40,14 @@ const patientSchema = new mongoose.Schema({
         sparse: true // Chỉ mục duy nhất nhưng không bắt buộc
     }, 
     gender: { 
-        type: String, 
+        type: String,  
         enum: ['Nam', 'Nữ', 'Khác'], 
         required: false,
         default: null, 
     },
     dateOfBirth: { 
-        type: String, 
+        type: Date, 
         required: false 
-    },
-    fullname: {  // Thêm trường fullname
-        type: String,
-        required: false, // Không bắt buộc
     },
     address: {
         type: String,

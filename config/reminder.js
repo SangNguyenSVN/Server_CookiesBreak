@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
 const moment = require('moment');
 const axios = require('axios'); 
-const dotenv = require('dotenv');
+require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',

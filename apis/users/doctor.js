@@ -71,6 +71,7 @@ router.post('/', upload.single('image'), async (req, res) => {
 
 // PUT /doctors/:id - Update an existing doctor with image upload
 router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
+    console.log(req.body)
     try {
         const { password, newPassword, ...updateData } = req.body;
         // Tìm bác sĩ theo ID

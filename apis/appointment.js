@@ -308,4 +308,109 @@ router.put('/update-status/:appointmentId', authMiddleware, async (req, res) => 
     }
 });
 
+
+router.get('/monthly/:year/:month', async (req, res) => {
+    const { year, month } = req.params;
+    const currentDate = new Date();
+    const currentDay = currentDate.getDate(); // Ngày hiện tại (1-31)
+    const currentMonth = currentDate.getMonth() + 1; // Tháng hiện tại (1-12)
+
+    // Kiểm tra nếu tháng hiện tại là tháng yêu cầu trong API
+    if (parseInt(month) > currentMonth || parseInt(year) > currentDate.getFullYear()) {
+        return res.status(400).json({ message: 'Tháng yêu cầu không hợp lệ, phải là tháng hiện tại hoặc trước đó.' });
+    }
+
+    // Tính ngày bắt đầu của tháng
+    const startOfMonth = new Date(`${year}-${month}-01`);
+    // Nếu tháng yêu cầu là tháng hiện tại, thì ngày kết thúc là ngày hiện tại
+    const endOfMonth = (parseInt(month) === currentMonth) 
+        ? new Date(`${year}-${month}-${currentDay}`)
+        : new Date(`${year}-${parseInt(month) + 1}-01`);
+
+    try {
+        // Lấy tất cả lịch hẹn trong tháng
+        const appointments = await Appointment.aggregate([
+            {
+                $match: {
+                    date: {
+                        $gte: startOfMonth, // Ngày bắt đầu tháng
+                        $lt: endOfMonth // Ngày kết thúc (ngày hiện tại hoặc ngày đầu tháng tiếp theo)
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: { $dayOfMonth: "$date" }, // Nhóm theo ngày trong tháng
+                    count: { $sum: 1 } // Tính số lượng lịch hẹn trong mỗi ngày
+                }
+            },
+            {
+                $sort: { "_id": 1 } // Sắp xếp theo ngày
+            }
+        ]);
+
+        // Tạo một mảng chứa tất cả các ngày từ 1 đến ngày hiện tại
+        let allDaysInMonth = Array.from({ length: currentDay }, (_, i) => ({ _id: i + 1, count: 0 }));
+
+        // Thêm dữ liệu từ appointments vào mảng allDaysInMonth
+        appointments.forEach(appointment => {
+            const day = appointment._id - 1;
+            allDaysInMonth[day] = appointment; // Cập nhật count cho ngày có lịch hẹn
+        });
+
+        res.status(200).json(allDaysInMonth);
+    } catch (error) {
+        res.status(500).json({ message: 'Có lỗi xảy ra', error });
+    }
+});
+
+
+
+
+// Thống kê lịch hẹn theo năm
+router.get('/yearly/:year', async (req, res) => {
+    const { year } = req.params;
+
+    try {
+        const appointments = await Appointment.aggregate([
+            {
+                $match: {
+                    date: {
+                        $gte: new Date(`${year}-01-01`), // Ngày bắt đầu năm
+                        $lt: new Date(`${parseInt(year) + 1}-01-01`) // Ngày bắt đầu năm tiếp theo
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: { $month: "$date" }, // Nhóm theo tháng
+                    count: { $sum: 1 } // Tính số lượng lịch hẹn trong mỗi tháng
+                }
+            },
+            {
+                $sort: { "_id": 1 } // Sắp xếp theo tháng
+            }
+        ]);
+
+        // Lấy tháng hiện tại
+        const currentMonth = new Date().getMonth() + 1; // Lấy tháng hiện tại (0-11, cộng 1 để có tháng 1-12)
+
+        // Tạo mảng chứa các tháng từ 1 đến tháng hiện tại
+        const months = Array.from({ length: currentMonth }, (_, index) => index + 1);
+
+        // Điền thêm các tháng không có lịch hẹn (count = 0)
+        const filledAppointments = months.map(month => {
+            const monthData = appointments.find(item => item._id === month);
+            return {
+                _id: month,
+                count: monthData ? monthData.count : 0
+            };
+        });
+
+        res.status(200).json(filledAppointments);
+    } catch (error) {
+        res.status(500).json({ message: 'Có lỗi xảy ra', error });
+    }
+});
+
 module.exports = router;

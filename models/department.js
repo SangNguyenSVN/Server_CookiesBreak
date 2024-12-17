@@ -18,7 +18,7 @@ const departmentSchema = new mongoose.Schema({
     hospital: { // Thêm trường để liên kết với bệnh viện
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Hospital',
-        required: true // Bắt buộc
+        required: false // Bắt buộc
     },
 }, { timestamps: true }); // Tự động thêm trường createdAt và updatedAt
 

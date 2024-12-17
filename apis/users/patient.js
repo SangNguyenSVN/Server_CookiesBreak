@@ -70,25 +70,24 @@ router.post('/', upload.single('image'), async (req, res) => {
 });
 
 // PUT /patients/:id - Update an existing patient with image upload
-router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
+router.put('/:id', upload.single('image'), async (req, res) => {
+    console.log(req.body)
     try {
         const { password, newPassword, ...updateData } = req.body;
-        console.log("data update:",req.boy)
-        // Tìm bệnh nhân theo ID
+        // Tìm bác sĩ theo ID
         const patient = await Patient.findById(req.params.id);
         if (!patient) return res.status(404).json({ message: 'Patient not found' });
-        console.log("Dữ liệu nhận được từ req.body:", req.body);
 
         // Kiểm tra và cập nhật mật khẩu nếu có
         if (password && newPassword) {
             const isMatch = await patient.comparePassword(password);
-            if (!isMatch) return res.status(400).json({ message: 'Mật khẩu hiện tại không chính xác' });
+            if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
         
             // Cập nhật mật khẩu mới và mã hóa nó
             patient.password = newPassword; // Gán mật khẩu mới sau khi mã hóa
         }
 
-        // Nếu có hình ảnh, thêm vào FormData
+        // Nếu có hình ảnh, tải lên Cloudinary
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path);
             updateData.image = result.secure_url;

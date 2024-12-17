@@ -6,6 +6,7 @@ const Admin = require('../models/admin')
 const Role = require('../models/role');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
+const axios = require("axios");
 
 exports.logout = (req, res) => {
     try {
@@ -140,8 +141,6 @@ exports.registerPatient = async (req, res) => {
 };
 
 
-
-
 // Đăng ký bác sĩ
 exports.registerDoctor = async (req, res) => {
     const { fullname, username, password, phoneNumber, hospitalId } = req.body;
@@ -210,10 +209,6 @@ exports.registerDoctor = async (req, res) => {
     }
 };
 
-
-
-// Đăng nhập
-// controllers/authController.js
 exports.login = async (req, res) => {
     const { username, password, userType } = req.body; // Thêm userType để xác định loại người dùng
 
@@ -274,7 +269,7 @@ exports.login = async (req, res) => {
                     gender: user.gender || "",
                     dateOfBirth: user.dateOfBirth ? user.dateOfBirth : null,
                     fullname: user.fullname || "",
-                    hospital:user.hospital || "",
+                    hospital: user.hospital || "",
                     address: user.address || "",
                     image: user.image || "", // Thêm trường URL ảnh
                 },
@@ -362,5 +357,96 @@ exports.resetPassword = async (req, res) => {
             message: 'Internal server error',
             error: error.message,
         });
+    }
+};
+
+exports.googleLogin = async (req, res) => {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+        return res.status(400).json({ error: "Missing idToken" });
+    }
+
+    try {
+        // Xác thực token với Google
+        const response = await axios.get(
+            `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`
+        );
+
+        const { email, name, picture } = response.data;
+
+        const user = { email, name, picture };
+
+        // Tạo token JWT cho ứng dụng của bạn
+        const appToken = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+        res.status(200).json({
+            message: "Login successful",
+            token: appToken,
+            user
+        });
+    } catch (error) {
+        console.error("Error verifying Google token:", error);
+        res.status(500).json({ error: "Invalid token or server error" });
+    }
+};
+
+
+exports.getUser = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Tìm bệnh nhân hoặc bác sĩ theo ID
+        const patient = await Patient.findById(id).populate('role');
+        const doctor = await Doctor.findById(id).populate('role hospital');
+
+        if (!patient && !doctor) {
+            return res.status(404).json({ message: 'Người dùng không tìm thấy.' });
+        }
+
+        let userInfo = null;
+        let roleName = null;
+
+        // Kiểm tra nếu là bệnh nhân
+        if (patient) {
+            roleName = patient.role ? patient.role.name : null;
+            userInfo = {
+                username: patient.username,
+                phoneNumber: patient.phoneNumber,
+                email: patient.email,
+                gender: patient.gender,
+                dateOfBirth: patient.dateOfBirth,
+                fullname: patient.fullname,
+                address: patient.address,
+                image: patient.image,
+            };
+        }
+        
+        // Kiểm tra nếu là bác sĩ
+        if (doctor) {
+            roleName = doctor.role ? doctor.role.name : null;
+            userInfo = {
+                fullname: doctor.fullname,
+                username: doctor.username,
+                phoneNumber: doctor.phoneNumber,
+                email: doctor.email,
+                gender: doctor.gender,
+                dateOfBirth: doctor.dateOfBirth,
+                specialty: doctor.specialty,
+                hospital: doctor.hospital, // Thông tin bệnh viện
+                appointments: doctor.appointments, // Thông tin lịch hẹn
+                address: doctor.address,
+                image: doctor.image,
+            };
+        }
+
+        // Trả về thông tin người dùng kèm theo vai trò
+        res.json({
+            userInfo,
+            roleName,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Đã xảy ra lỗi khi lấy thông tin người dùng.' });
     }
 };

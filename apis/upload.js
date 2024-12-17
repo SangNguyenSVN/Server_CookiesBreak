@@ -10,7 +10,7 @@ router.post('/image', upload.single('image'), async (req, res) => {
             return res.status(400).json({ status: 0, message: 'No file uploaded' });
         } else {
             // Thay đổi địa chỉ IP thành địa chỉ của máy chủ của bạn
-            const url = `http://192.168.1.4:3000/images/${file.filename}`; 
+            const url = `http://192.168.1.120:3001/images/${file.filename}`; 
             return res.status(200).json({ status: 1, url: url });
         }
     } catch (error) {

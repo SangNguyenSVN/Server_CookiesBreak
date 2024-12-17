@@ -6,7 +6,6 @@ const cors = require('cors');
 const path = require('path');
 const cron = require('node-cron');
 const sendReminder = require('./config/reminder'); // Gọi reminder.js
-const updateChart = require('./controllers/charts');
 // Gọi routes
 const roleRoutes = require('./routes/role');
 const authRoutes = require('./routes/auth');
@@ -65,6 +64,7 @@ cron.schedule('0 0 1 * *', async () => {
     console.log('Saving monthly appointment count...');
     await updateChart.saveMonthlyCount(); // Gọi hàm để lưu số lượng
 });
+
 
 // Xuất ứng dụng
 module.exports = app;

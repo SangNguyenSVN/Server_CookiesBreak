@@ -4,11 +4,11 @@ const Package = require('../models/package');
 const Medicine = require('../models/medicine');
 const Department = require('../models/department')
 const Doctor = require('../models/doctor')
-const cloudinary = require('../config/cloudinary'); // Nhập Cloudinary
+const cloudinary = require('../config/cloudinary'); // Nh ập Cloudinary
 const upload = require('../config/multer'); // Nhập multer middleware
 const authMiddleware = require('../middleware/auth');
-const router = express.Router();
- 
+const router = express.Router(); 
+
 // POST /hospitals - Thêm bệnh viện mới với hình ảnh
 router.post('/', upload.single('image'), async (req, res) => {
     try {
@@ -92,7 +92,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /hospitals/:id - Cập nhật thông tin bệnh viện
-router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
+router.put('/:id',authMiddleware, upload.single('image'), async (req, res) => {
     try {
         const { file } = req;
         const updateData = { ...req.body };
@@ -220,7 +220,14 @@ router.get('/department/:departmentName', async (req, res) => {
 
         // Tìm các bệnh viện liên kết với ID khoa
         const hospitals = await Hospital.find({ departments: department._id })
-            .populate('departments'); // Kết hợp dữ liệu từ bảng Department
+            .populate({
+                path: 'doctors',
+                select: 'image fullname specialty' // Chỉ lấy image, fullname, specialty của bác sĩ
+            })
+            .populate('departments') // Nếu bạn cũng muốn lấy thông tin phòng ban
+            .populate('medicines') // Nếu bạn cũng muốn lấy thông tin thuốc
+            .populate('packages') // Nếu bạn cũng muốn lấy thông tin gói
+            .exec();
 
         if (hospitals.length === 0) {
             return res.status(404).json({ message: 'Không tìm thấy bệnh viện nào cho khoa này.' });

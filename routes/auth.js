@@ -3,6 +3,8 @@ const router = express.Router();
 const authController = require('../controllers/auth');
 const authMiddleware = require('../middleware/auth');
 
+// http://localhost:3000/auth/user
+router.get('/user/:id', authController.getUser);
 // http://localhost:3000/auth/register/patient
 router.post('/register/patient', authController.registerPatient);
 // http://localhost:3000/auth/register/doctor

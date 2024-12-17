@@ -1,7 +1,8 @@
 const axios = require('axios');
 require('dotenv').config();
 const Payment = require("../models/payment");
-const Appointment = require("../models/appointment")
+const Appointment = require("../models/appointment");
+const Status = require("../models/status"); // Import model Status
 
 const createPayment = async (req, res) => {
     const { total, currency, patientId, appointmentId } = req.body;
@@ -88,10 +89,29 @@ const createPayment = async (req, res) => {
         const newPayment = new Payment(paymentData);
         await newPayment.save();
 
+        // Tìm trạng thái "Đã thanh toán" trong bảng Status
+        const paidStatus = await Status.findOne({ name: "đã thanh toán" });
+        if (!paidStatus) {
+            console.error('Status "Đã thanh toán" not found.');
+            return res.status(500).json({ error: 'Status "Đã thanh toán" not found' });
+        }
+
+        // Cập nhật trạng thái lịch hẹn
+        const updatedAppointment = await Appointment.findByIdAndUpdate(
+            appointmentId,
+            { status: paidStatus._id }, // Gán ID của trạng thái "Đã thanh toán"
+            { new: true }
+        );
+
+        if (!updatedAppointment) {
+            console.error(`Appointment with ID ${appointmentId} not found.`);
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
         // Trả về URL chuyển hướng để front-end chuyển hướng người dùng tới PayPal
         const approvalUrl = paymentResponse.data.links.find(link => link.rel === 'approval_url').href;
-        console.log(approvalUrl)
-        res.json({ approvalUrl });
+        console.log(approvalUrl);
+        res.json({ approvalUrl, updatedAppointment });
     } catch (error) {
         console.error('Error response:', error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'Unable to create payment', details: error.response ? error.response.data : null });

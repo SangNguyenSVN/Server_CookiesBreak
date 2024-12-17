@@ -29,7 +29,7 @@ const doctorSchema = new mongoose.Schema({
             }
         }
     },
-    role: { // Thêm trường role
+    role: { // Thêm trường role 
         type: Schema.Types.ObjectId,
         ref: 'Role', // Liên kết tới Role
         required: true // Bắt buộc
@@ -59,7 +59,7 @@ const doctorSchema = new mongoose.Schema({
         ref: 'Hospital', // Liên kết tới Hospital
         required: true // Bắt buộc
     },
-    appointments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' }],
+    appointments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Appointment',required: false }],
     address: {
         type: String,
         required: false, // Không bắt buộc

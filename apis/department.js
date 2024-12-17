@@ -62,24 +62,38 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /departments/:id - Cập nhật department theo ID
+// PUT /departments/:id - Cập nhật department theo ID
 router.put('/:id', upload.single('image'), async (req, res) => {
-    try {
-        const { file } = req;
-        const updateData = { ...req.body };
+    console.log('Request body: ', req.body); // Log nội dung body
+    console.log('Uploaded file: ', req.file); // Log thông tin về file
 
-        // Nếu có file hình ảnh mới, upload lên Cloudinary
-        if (file) {
-            const result = await cloudinary.uploader.upload(file.path);
-            updateData.image = result.secure_url; // Cập nhật URL hình ảnh
+    try {
+        const { name, description, hospitalId } = req.body; // Lấy thông tin từ body
+        const updateData = { name, description, hospital: hospitalId };
+
+        // Nếu có file mới, upload lên Cloudinary và cập nhật URL hình ảnh
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            updateData.image = result.secure_url; // Cập nhật URL hình ảnh mới
         }
 
-        const department = await Department.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
-        if (!department) return res.status(404).json({ error: 'Department not found' });
-        res.status(200).json(department);
+        const updatedDepartment = await Department.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedDepartment) {
+            return res.status(404).json({ message: 'Department not found' });
+        }
+
+        res.status(200).json(updatedDepartment);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(400).json({ message: 'Error updating department', error });
     }
 });
+
+
 
 // DELETE /departments/:id - Xóa department theo ID
 router.delete('/:id', async (req, res) => {
