@@ -205,7 +205,29 @@ router.put('/:id',authMiddleware, upload.single('image'), async (req, res) => {
 });
 
 
-
+router.get('/doctor/:doctorId',authMiddleware, async (req, res) => {
+    try {
+      const { doctorId } = req.params;
+  
+      // Tìm bác sĩ theo doctorId và lấy thông tin bệnh viện liên kết
+      const doctor = await Doctor.findById(doctorId).populate('hospital');
+  
+      // Kiểm tra xem bác sĩ có tồn tại không
+      if (!doctor) {
+        return res.status(404).json({ message: 'Doctor not found' });
+      }
+  
+      // Trả về thông tin bệnh viện
+      if (!doctor.hospital) {
+        return res.status(404).json({ message: 'Hospital not found for this doctor' });
+      }
+  
+      return res.status(200).json(doctor.hospital);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
 
 //Get   api/getbyderpartmene
 router.get('/department/:departmentName', async (req, res) => {

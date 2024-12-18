@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 
 // 2. Route để thêm một đánh giá mới
 router.post('/', async (req, res) => {
-  try {
+  try { 
     const { score, comment, hospitalId, patientId } = req.body;
 
     // Kiểm tra bệnh viện và người dùng có tồn tại không
